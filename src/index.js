@@ -16,6 +16,29 @@ import {
   getIpInfo,
   findSubdomains,
 } from "./collectors.js";
+import { buildReportPdfBytes } from "./report.js";
+
+async function runAnalyzePipeline(domain) {
+  const [dnsRecords, rdap, ssl, fingerprint, subdomains] = await Promise.all([
+    getDnsRecords(domain),
+    getRdap(domain).catch((e) => ({ error: e.message })),
+    getSslCertificate(domain),
+    fingerprintWebsite(domain),
+    findSubdomains(domain, 20).catch((e) => ({ error: e.message })),
+  ]);
+  const ip = dnsRecords.A?.[0];
+  const ipInfo = ip ? await getIpInfo(ip).catch((e) => ({ error: e.message })) : null;
+  return {
+    domain,
+    dns: dnsRecords,
+    inferred_email_provider: detectEmailProvider(dnsRecords.MX),
+    registration: rdap,
+    ssl_certificate: ssl,
+    website_fingerprint: fingerprint,
+    hosting: ipInfo,
+    subdomains,
+  };
+}
 
 const PORT = process.env.PORT || 3000;
 const domainSchema = { domain: z.string().describe("A bare domain name, e.g. 'example.com' (no protocol, no path).") };
@@ -105,27 +128,37 @@ function buildServer() {
         "Run the full pipeline for a domain and return a combined company tech/infra profile: DNS, RDAP registration info, SSL certificate, website fingerprint, cloud provider inference and subdomain count. This is the equivalent of a 'get company report' call.",
       inputSchema: domainSchema,
     },
-    async ({ domain }) => {
+    async ({ domain }) => asToolResult(await runAnalyzePipeline(normalizeDomain(domain)))
+  );
+
+  server.registerTool(
+    "generate_report_pdf",
+    {
+      description:
+        "Run the full analyze_company pipeline for a domain and render it into a Gantech-branded PDF report (visual, with brand colors and logo), returned as an embedded PDF resource. Use this instead of analyze_company when the user wants a shareable/printable report rather than raw JSON.",
+      inputSchema: {
+        domain: z.string().describe("A bare domain name, e.g. 'example.com' (no protocol, no path)."),
+        cliente: z.string().optional().describe("Optional client/company display name shown next to the date in the report header."),
+      },
+    },
+    async ({ domain, cliente }) => {
       const d = normalizeDomain(domain);
-      const [dnsRecords, rdap, ssl, fingerprint, subdomains] = await Promise.all([
-        getDnsRecords(d),
-        getRdap(d).catch((e) => ({ error: e.message })),
-        getSslCertificate(d),
-        fingerprintWebsite(d),
-        findSubdomains(d, 20).catch((e) => ({ error: e.message })),
-      ]);
-      const ip = dnsRecords.A?.[0];
-      const ipInfo = ip ? await getIpInfo(ip).catch((e) => ({ error: e.message })) : null;
-      return asToolResult({
-        domain: d,
-        dns: dnsRecords,
-        inferred_email_provider: detectEmailProvider(dnsRecords.MX),
-        registration: rdap,
-        ssl_certificate: ssl,
-        website_fingerprint: fingerprint,
-        hosting: ipInfo,
-        subdomains,
-      });
+      const data = await runAnalyzePipeline(d);
+      const pdfBytes = await buildReportPdfBytes(data, cliente);
+      const base64 = Buffer.from(pdfBytes).toString("base64");
+      return {
+        content: [
+          {
+            type: "resource",
+            resource: {
+              uri: `data:application/pdf;name=Relatorio_Gantech_${d}.pdf`,
+              mimeType: "application/pdf",
+              blob: base64,
+            },
+          },
+          { type: "text", text: `Relatorio gerado para ${d}.` },
+        ],
+      };
     }
   );
 
