@@ -1,0 +1,17 @@
+{
+  "name": "company-tech-profiler-remote",
+  "version": "1.0.0",
+  "description": "Remote (HTTP) MCP server that profiles a company's cloud/tech stack using free public data sources — deployable to Render's free tier for use from Cowork/claude.ai.",
+  "type": "module",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "express": "^4.21.2"
+  }
+}
