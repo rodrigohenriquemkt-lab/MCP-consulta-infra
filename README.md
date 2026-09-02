@@ -19,23 +19,25 @@ npm start
 # ouve em http://localhost:3000, endpoint MCP em /mcp
 ```
 
-## Deploy no Render (free tier)
+## Deploy no Railway
 
 1. Suba este diretório para um repositório Git (GitHub/GitLab).
-2. Em https://render.com, crie uma conta gratuita (ou entre na existente).
-3. **New +** → **Blueprint**, aponte para o repositório — o `render.yaml`
-   já descreve o serviço (`company-tech-profiler-remote`, plano free).
-   Alternativamente, **New +** → **Web Service** manual, com:
-   - Build command: `npm install`
-   - Start command: `npm start`
-4. Aguarde o deploy. A URL final fica algo como
-   `https://company-tech-profiler-remote.onrender.com`.
-5. O endpoint MCP é essa URL + `/mcp`
-   (ex: `https://company-tech-profiler-remote.onrender.com/mcp`).
+2. Em https://railway.com, crie uma conta (ou entre na existente).
+3. **New Project** → **Deploy from GitHub repo**, aponte para este
+   repositório — o `railway.json` já descreve o build (Nixpacks,
+   `npm install`) e o start command (`npm start`).
+4. Em **Settings → Networking**, gere um domínio público (**Generate
+   Domain**). A porta é detectada automaticamente via `process.env.PORT`,
+   que o servidor já usa (`src/index.js`).
+5. Aguarde o deploy. A URL final fica algo como
+   `https://company-tech-profiler-remote-production.up.railway.app`.
+6. O endpoint MCP é essa URL + `/mcp`
+   (ex: `https://company-tech-profiler-remote-production.up.railway.app/mcp`).
 
-**Nota sobre o free tier:** o serviço "dorme" após ~15 min sem receber
-requisições. A primeira chamada depois disso demora uns 20-30s pra acordar;
-chamadas seguintes respondem normalmente.
+**Nota:** diferente do free tier do Render, o Railway não coloca o serviço
+para dormir por padrão — as respostas ficam consistentes sem o atraso de
+"acordar" após inatividade. O plano gratuito do Railway é por créditos
+mensais (uso), não por tempo ocioso.
 
 ## Conectar no Cowork / claude.ai
 
