@@ -15,6 +15,7 @@ import {
   fingerprintWebsite,
   getIpInfo,
   findSubdomains,
+  getShodanExposure,
 } from "./collectors.js";
 import { buildReportPdfBytes } from "./report.js";
 
@@ -27,7 +28,10 @@ async function runAnalyzePipeline(domain) {
     findSubdomains(domain, 20).catch((e) => ({ error: e.message })),
   ]);
   const ip = dnsRecords.A?.[0];
-  const ipInfo = ip ? await getIpInfo(ip).catch((e) => ({ error: e.message })) : null;
+  const [ipInfo, exposure] = await Promise.all([
+    ip ? getIpInfo(ip).catch((e) => ({ error: e.message })) : Promise.resolve(null),
+    ip ? getShodanExposure(ip).catch((e) => ({ error: e.message })) : Promise.resolve(null),
+  ]);
   return {
     domain,
     dns: dnsRecords,
@@ -36,6 +40,7 @@ async function runAnalyzePipeline(domain) {
     ssl_certificate: ssl,
     website_fingerprint: fingerprint,
     hosting: ipInfo,
+    exposure,
     subdomains,
   };
 }
@@ -112,6 +117,21 @@ function buildServer() {
   );
 
   server.registerTool(
+    "get_exposure_data",
+    {
+      description:
+        "Look up the domain's IP on Shodan to report open ports, detected services/versions, and any known CVEs associated with them — a free proxy for internet-facing attack surface. Requires SHODAN_API_KEY to be configured on the server; returns an explanatory error if it isn't.",
+      inputSchema: domainSchema,
+    },
+    async ({ domain }) => {
+      const d = normalizeDomain(domain);
+      const records = await getDnsRecords(d);
+      const ip = records.A?.[0];
+      return asToolResult(ip ? await getShodanExposure(ip) : { error: "Could not resolve an A record for this domain." });
+    }
+  );
+
+  server.registerTool(
     "find_subdomains",
     {
       description:
@@ -125,7 +145,7 @@ function buildServer() {
     "analyze_company",
     {
       description:
-        "Run the full pipeline for a domain and return a combined company tech/infra profile: DNS, RDAP registration info, SSL certificate, website fingerprint, cloud provider inference and subdomain count. This is the equivalent of a 'get company report' call.",
+        "Run the full pipeline for a domain and return a combined company tech/infra profile: DNS, RDAP registration info, SSL certificate, website fingerprint, cloud provider inference, Shodan exposure data (open ports/services/CVEs, if SHODAN_API_KEY is configured) and subdomain count. This is the equivalent of a 'get company report' call.",
       inputSchema: domainSchema,
     },
     async ({ domain }) => asToolResult(await runAnalyzePipeline(normalizeDomain(domain)))
