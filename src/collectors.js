@@ -156,6 +156,53 @@ export async function getIpInfo(ip) {
   };
 }
 
+export async function getShodanExposure(ip) {
+  const apiKey = process.env.SHODAN_API_KEY;
+  if (!apiKey) {
+    return { error: "SHODAN_API_KEY not configured on the server." };
+  }
+  const res = await fetch(
+    `https://api.shodan.io/shodan/host/${encodeURIComponent(ip)}?key=${encodeURIComponent(apiKey)}`,
+    { headers: { "User-Agent": UA }, signal: AbortSignal.timeout(15000) }
+  );
+  if (res.status === 404) {
+    return { ip, indexed: false, message: "No Shodan data for this IP (not indexed / no open services detected)." };
+  }
+  if (!res.ok) {
+    let detail = "";
+    try {
+      detail = (await res.json())?.error || "";
+    } catch {
+      // ignore body parse errors
+    }
+    return { error: `Shodan lookup failed with status ${res.status}${detail ? `: ${detail}` : ""}` };
+  }
+  const data = await res.json();
+  const ports = [...new Set(data.ports || [])].sort((a, b) => a - b);
+  const services = (data.data || []).map((svc) => ({
+    port: svc.port,
+    transport: svc.transport,
+    product: svc.product || null,
+    version: svc.version || null,
+    cpe: svc.cpe || [],
+    banner_excerpt: svc.data ? String(svc.data).slice(0, 200).trim() : null,
+  }));
+  const vulns = data.vulns ? Object.keys(data.vulns) : [];
+  return {
+    ip: data.ip_str || ip,
+    indexed: true,
+    org: data.org || null,
+    isp: data.isp || null,
+    asn: data.asn || null,
+    country: data.country_name || null,
+    city: data.city || null,
+    open_ports: ports,
+    services,
+    known_vulnerabilities_cve: vulns,
+    last_update: data.last_update || null,
+  };
+}
+
 export async function findSubdomains(domain, limit = 50) {
   const res = await fetch(
     `https://crt.sh/?q=${encodeURIComponent("%." + domain)}&output=json`,
