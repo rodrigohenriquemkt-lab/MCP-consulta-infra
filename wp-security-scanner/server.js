@@ -119,6 +119,7 @@ function runWpscan(domain) {
       'json',
       '--no-banner',
       '--ignore-main-redirect',
+      '--exclude-content-based',
       '--throttle',
       '500',
     ];
