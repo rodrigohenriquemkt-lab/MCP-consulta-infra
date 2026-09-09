@@ -15,32 +15,53 @@ const WPSCAN_TOKEN = process.env.WPSCAN_API_TOKEN || '';
 
 const lastResults = {};
 
-function checkHeaders(domain) {
+function fetchHeadersOnce(host, path) {
   return new Promise((resolve) => {
-    const req = https.request(
-      { host: domain, path: '/', method: 'HEAD', timeout: 15000 },
-      (res) => {
-        const h = res.headers;
-        const wanted = [
-          'strict-transport-security',
-          'content-security-policy',
-          'x-frame-options',
-          'x-content-type-options',
-          'referrer-policy',
-          'permissions-policy',
-        ];
-        const report = {};
-        for (const name of wanted) report[name] = h[name] || null;
-        report.server = h.server || null;
-        report['x-powered-by'] = h['x-powered-by'] || null;
-        resolve({ status: res.statusCode, headers: report });
-        res.resume();
-      }
-    );
+    const req = https.request({ host, path, method: 'HEAD', timeout: 15000 }, (res) => {
+      resolve({ status: res.statusCode, headers: res.headers });
+      res.resume();
+    });
     req.on('timeout', () => req.destroy(new Error('timeout')));
     req.on('error', (e) => resolve({ error: e.message }));
     req.end();
   });
+}
+
+async function checkHeaders(domain) {
+  let host = domain;
+  let path = '/';
+  let last = await fetchHeadersOnce(host, path);
+
+  // Follow a same-host-family redirect chain (e.g. apex -> www) so we
+  // report the security posture of the page that actually renders.
+  for (let hop = 0; hop < 3 && last.headers && last.headers.location; hop++) {
+    let next;
+    try {
+      next = new URL(last.headers.location, `https://${host}${path}`);
+    } catch {
+      break;
+    }
+    host = next.hostname;
+    path = next.pathname + next.search;
+    last = await fetchHeadersOnce(host, path);
+  }
+
+  if (last.error) return last;
+
+  const h = last.headers;
+  const wanted = [
+    'strict-transport-security',
+    'content-security-policy',
+    'x-frame-options',
+    'x-content-type-options',
+    'referrer-policy',
+    'permissions-policy',
+  ];
+  const report = {};
+  for (const name of wanted) report[name] = h[name] || null;
+  report.server = h.server || null;
+  report['x-powered-by'] = h['x-powered-by'] || null;
+  return { status: last.status, finalHost: host, headers: report };
 }
 
 function checkTlsVersion(domain, version) {
@@ -97,6 +118,7 @@ function runWpscan(domain) {
       '--format',
       'json',
       '--no-banner',
+      '--ignore-main-redirect',
       '--throttle',
       '500',
     ];
@@ -120,13 +142,39 @@ function runWpscan(domain) {
   });
 }
 
+function summarize(headers, wpscan) {
+  const missingHeaders = Object.entries(headers.headers || {})
+    .filter(([k, v]) => v === null && k !== 'server' && k !== 'x-powered-by')
+    .map(([k]) => k);
+
+  let vulnCount = 0;
+  const vulnByComponent = [];
+  const collect = (label, entry) => {
+    const n = (entry && entry.vulnerabilities && entry.vulnerabilities.length) || 0;
+    if (n > 0) {
+      vulnCount += n;
+      vulnByComponent.push({ component: label, count: n, version: entry.version && entry.version.number });
+    }
+  };
+  if (wpscan && !wpscan.error && !wpscan.scan_aborted) {
+    collect('wordpress-core', wpscan.version);
+    collect('theme:' + (wpscan.main_theme && wpscan.main_theme.slug), wpscan.main_theme);
+    for (const [slug, plugin] of Object.entries(wpscan.plugins || {})) {
+      collect('plugin:' + slug, plugin);
+    }
+  }
+
+  return { missingHeaders, vulnCount, vulnByComponent };
+}
+
 async function scanDomain(domain) {
   const [headers, tlsVersions, wpscan] = await Promise.all([
     checkHeaders(domain),
     checkTls(domain),
     runWpscan(domain),
   ]);
-  return { domain, scannedAt: new Date().toISOString(), headers, tls: tlsVersions, wpscan };
+  const summary = summarize(headers, wpscan);
+  return { domain, scannedAt: new Date().toISOString(), summary, headers, tls: tlsVersions, wpscan };
 }
 
 async function scanAll() {
@@ -135,9 +183,11 @@ async function scanAll() {
     try {
       const result = await scanDomain(domain);
       lastResults[domain] = result;
-      console.log('===SCAN_RESULT_START===');
-      console.log(JSON.stringify(result, null, 2));
-      console.log('===SCAN_RESULT_END===');
+      console.log(`SCAN_SUMMARY ${domain} ${JSON.stringify(result.summary)}`);
+      // Single-line JSON on purpose: the log pipeline ships multi-line
+      // console.log output as separate entries and does not guarantee their
+      // relative order back, which corrupts a pretty-printed object.
+      console.log(`SCAN_RESULT_JSON ${domain} ${JSON.stringify(result)}`);
     } catch (e) {
       console.log(`[scan] failed ${domain}: ${e.message}`);
     }
