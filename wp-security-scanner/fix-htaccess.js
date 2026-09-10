@@ -86,7 +86,8 @@ async function run() {
   }
 
   const client = new Client(30000);
-  client.ftp.verbose = false;
+  client.ftp.verbose = true;
+  client.ftp.log = (msg) => console.log(`[ftp-raw] ${msg}`);
 
   try {
     log('connect', `connecting to ${host}:${port} (explicit FTPS)`);
@@ -160,7 +161,8 @@ async function run() {
 
     log('done', 'all fixes applied');
   } catch (e) {
-    log('error', e.message);
+    log('error', `${e.name || 'Error'}: ${e.message || '(no message)'} code=${e.code || 'n/a'}`);
+    if (e.stack) console.log(`[ftp-fix] stack: ${e.stack}`);
   } finally {
     client.close();
   }
