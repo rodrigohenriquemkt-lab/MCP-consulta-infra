@@ -74,7 +74,30 @@ async function uploadText(client, remotePath, text) {
   await client.uploadFrom(Readable.from([text]), remotePath);
 }
 
+async function diagCheck() {
+  // Isolates whether outbound FTP (port 21) works at all from this
+  // container, using a well-known public anonymous FTP server, unrelated
+  // to the real target. Helps tell apart "Railway blocks port 21" from
+  // "the target host rejects/firewalls this connection".
+  const client = new Client(15000);
+  client.ftp.verbose = true;
+  client.ftp.log = (msg) => console.log(`[diag-raw] ${msg}`);
+  try {
+    log('diag', 'trying plain FTP to speedtest.tele2.net:21 (anonymous, public test server)');
+    await client.access({ host: 'speedtest.tele2.net', user: 'anonymous', password: 'anonymous@', secure: false });
+    log('diag', 'SUCCESS connecting to public FTP server — outbound port 21 works from this container');
+  } catch (e) {
+    log('diag', `FAILED connecting to public FTP server: ${e.name || 'Error'}: ${e.message} code=${e.code || 'n/a'}`);
+  } finally {
+    client.close();
+  }
+}
+
 async function run() {
+  if (process.env.FTP_DIAG === 'true') {
+    await diagCheck();
+    return;
+  }
   const host = process.env.FTP_HOST;
   const user = process.env.FTP_USER;
   const password = process.env.FTP_PASSWORD;
