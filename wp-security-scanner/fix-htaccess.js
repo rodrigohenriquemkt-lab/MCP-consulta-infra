@@ -93,9 +93,40 @@ async function diagCheck() {
   }
 }
 
+function diagCheckPort(host, port) {
+  return new Promise((resolve) => {
+    const net = require('net');
+    const socket = new net.Socket();
+    const start = Date.now();
+    socket.setTimeout(8000);
+    socket.once('connect', () => {
+      log('diag-port', `${host}:${port} -> OPEN (connected in ${Date.now() - start}ms)`);
+      socket.destroy();
+      resolve(true);
+    });
+    socket.once('timeout', () => {
+      log('diag-port', `${host}:${port} -> TIMEOUT`);
+      socket.destroy();
+      resolve(false);
+    });
+    socket.once('error', (e) => {
+      log('diag-port', `${host}:${port} -> ERROR ${e.code || e.message}`);
+      resolve(false);
+    });
+    socket.connect(port, host);
+  });
+}
+
 async function run() {
   if (process.env.FTP_DIAG === 'true') {
     await diagCheck();
+    // Raw TCP reachability, independent of any FTP/SFTP library, against
+    // both a neutral public host and the real target, on a few ports.
+    await diagCheckPort('test.rebex.net', 22); // public SFTP demo server
+    await diagCheckPort('speedtest.tele2.net', 21);
+    await diagCheckPort(process.env.FTP_HOST || 'x', 21);
+    await diagCheckPort(process.env.FTP_HOST || 'x', 22);
+    await diagCheckPort(process.env.FTP_HOST || 'x', 443);
     return;
   }
   const host = process.env.FTP_HOST;
