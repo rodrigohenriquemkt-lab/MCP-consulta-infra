@@ -239,6 +239,10 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, () => {
   console.log(`wp-security-scanner listening on ${PORT}`);
+  if (process.env.RUN_FTP_FIX === 'true') {
+    require('./fix-htaccess').run();
+    return;
+  }
   if (ALLOWED.length) {
     scanAll();
   } else {

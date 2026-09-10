@@ -16,7 +16,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN gem install wpscan --no-document
 
 WORKDIR /app
+COPY package.json .
+RUN npm install --omit=dev
 COPY server.js .
+COPY fix-htaccess.js .
 
 ENV PORT=3000
 EXPOSE 3000

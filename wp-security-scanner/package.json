@@ -1,0 +1,8 @@
+{
+  "name": "wp-security-scanner",
+  "private": true,
+  "version": "1.0.0",
+  "dependencies": {
+    "basic-ftp": "^5.0.5"
+  }
+}
