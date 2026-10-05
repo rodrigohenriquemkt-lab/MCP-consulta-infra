@@ -46,7 +46,7 @@ function createWindow() {
 // http://127.0.0.1:47800/ingest  {title, detail?, source?, externalId?, url?, priority?}
 // Só escuta em loopback.
 function startIngest() {
-  http.createServer((req, res) => {
+  const server = http.createServer((req, res) => {
     if (req.method !== 'POST' || req.url !== '/ingest') { res.writeHead(404).end(); return; }
     let body = '';
     req.on('data', (c) => { body += c; if (body.length > 1e5) req.destroy(); });
@@ -61,7 +61,9 @@ function startIngest() {
         res.writeHead(400, { 'content-type': 'application/json' }).end(JSON.stringify({ error: e.message }));
       }
     });
-  }).listen(INGEST_PORT, '127.0.0.1');
+  });
+  server.on('error', (e) => console.error(`Ingest desativado (porta ${INGEST_PORT}): ${e.code}`));
+  server.listen(INGEST_PORT, '127.0.0.1');
 }
 
 // Arquivo de troca com o coletor na nuvem (ex.: pasta do OneDrive sincronizada).
@@ -78,7 +80,12 @@ function pollInbox() {
   } catch (e) { /* arquivo ausente ou ainda sincronizando: tenta no próximo ciclo */ }
 }
 
+// Instância única: abrir de novo apenas mostra a janela que já existe.
+if (!app.requestSingleInstanceLock()) app.quit();
+app.on('second-instance', () => { if (win) { win.show(); win.focus(); } });
+
 app.whenReady().then(() => {
+  if (!app.hasSingleInstanceLock()) return;
   file = path.join(app.getPath('userData'), 'workstack.json');
   store = createStore(load());
   createWindow();
