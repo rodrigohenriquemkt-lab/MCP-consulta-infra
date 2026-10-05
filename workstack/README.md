@@ -21,4 +21,17 @@ curl -X POST localhost:47800/ingest -H 'content-type: application/json' \
 ```
 `source + externalId` evita duplicatas (reenviar atualiza a nota). Aceita também um array.
 
+### Critério de entrada na pilha
+| Tipo | Entra quando | Prioridade |
+|---|---|---|
+| `email` | não lido ou sinalizado (e não enviado por você) | vermelho se importância alta/sinalizado |
+| `chat` (Teams) | menção a você ou mensagem direta sem resposta | vermelho se menção urgente |
+| `meeting` | começa nas próximas 24h e não foi recusada | vermelho se <2h ou <24h; laranja <72h |
+| `task` | não concluída | por vencimento: <24h vermelho, <72h laranja, senão amarelo |
+
+Regras em `connectors/normalize.js`. Entrada crua (formato Microsoft Graph) → nota:
+```bash
+echo '[{"id":"e1","subject":"Reunião ACME","start":{"dateTime":"2026-10-05T15:00:00Z"}}]' | node bin/push.js meeting
+```
+
 Próximo passo: um *conector* (tarefa agendada no Claude, ou serviço usando Microsoft Graph) que varre Outlook/Teams e chama esse endpoint.

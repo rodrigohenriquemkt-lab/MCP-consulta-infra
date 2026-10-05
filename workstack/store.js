@@ -3,6 +3,7 @@
 
 const PRIORITIES = ['red', 'orange', 'yellow', 'green', 'blue'];
 const DEFAULT_PRIORITY = 'yellow';
+const KINDS = ['email', 'chat', 'meeting', 'task', 'manual'];
 
 function createStore(initial = []) {
   let items = Array.isArray(initial) ? initial.slice() : [];
@@ -21,6 +22,7 @@ function createStore(initial = []) {
         title,
         detail: input.detail ?? existing.detail,
         url: input.url ?? existing.url,
+        due: input.due ?? existing.due,
       });
       return existing;
     }
@@ -31,6 +33,8 @@ function createStore(initial = []) {
       source,
       externalId: input.externalId || null,
       url: input.url || null,
+      kind: KINDS.includes(input.kind) ? input.kind : 'manual',
+      due: input.due ? new Date(input.due).getTime() : null,
       priority: PRIORITIES.includes(input.priority) ? input.priority : DEFAULT_PRIORITY,
       startedAt: input.startedAt ? new Date(input.startedAt).getTime() : Date.now(),
       done: false,
@@ -64,4 +68,4 @@ function createStore(initial = []) {
   return { upsert, setPriority, setDone, remove, list, snapshot: () => items.slice() };
 }
 
-module.exports = { createStore, PRIORITIES };
+module.exports = { createStore, PRIORITIES, KINDS };

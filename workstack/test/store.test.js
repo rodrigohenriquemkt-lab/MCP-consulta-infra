@@ -35,3 +35,12 @@ test('concluídas vão para o fim; título obrigatório', () => {
   assert.deepStrictEqual(s.list().map((i) => i.title), ['B', 'A']);
   assert.throws(() => s.upsert({ title: '  ' }));
 });
+
+test('kind e due são preservados; kind inválido vira manual', () => {
+  const s = createStore();
+  const a = s.upsert({ title: 'R', kind: 'meeting', due: 5000 });
+  const b = s.upsert({ title: 'X', kind: 'foo' });
+  assert.strictEqual(a.kind, 'meeting');
+  assert.strictEqual(a.due, 5000);
+  assert.strictEqual(b.kind, 'manual');
+});
