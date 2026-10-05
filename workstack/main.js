@@ -98,6 +98,8 @@ app.whenReady().then(() => {
   cfgFile = path.join(app.getPath('userData'), 'settings.json');
   cfg = settings.resolve(cfgFile);
   store = createStore(load());
+  store.prune(); save();
+  setInterval(() => { store.prune(); save(); }, 6 * 3600e3);
   createWindow();
   startIngest();
   pollInbox();

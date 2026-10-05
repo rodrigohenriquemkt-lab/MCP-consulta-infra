@@ -25,7 +25,7 @@ function render() {
       d.onclick = () => window.ws.priority(i.id, c);
       tools.append(d);
     });
-    const ok = el('button', null, i.done ? '↩' : '✓'); ok.onclick = () => window.ws.done(i.id, !i.done);
+    const ok = el('button', null, '✓'); ok.title = 'Concluir (remove da lista)'; ok.onclick = () => window.ws.done(i.id, true);
     const rm = el('button', null, '🗑'); rm.onclick = () => window.ws.remove(i.id);
     tools.append(ok, rm);
     if (i.url) { const go = el('button', null, '↗'); go.onclick = () => window.ws.open(i.url); tools.append(go); }

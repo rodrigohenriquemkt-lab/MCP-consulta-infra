@@ -81,6 +81,7 @@ const looksLikeQuestion = (t) => {
 };
 
 function whatsapp(m, { now = Date.now() } = {}) {
+  if (/@(broadcast|newsletter)$/i.test(String(m.id || ''))) return null; // Status e canais não são conversas
   const msgs = m.messages || [];
   let lastMine = -1;
   msgs.forEach((x, i) => { if (x.fromMe) lastMine = i; });

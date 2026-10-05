@@ -27,13 +27,24 @@ test('prioridade por cor e filtro', () => {
   assert.throws(() => s.setPriority(a.id, 'pink'));
 });
 
-test('concluídas vão para o fim; título obrigatório', () => {
+test('concluídas saem da lista (mas ficam guardadas); título obrigatório', () => {
   const s = createStore();
   const a = s.upsert({ title: 'A', startedAt: 2000 });
   s.upsert({ title: 'B', startedAt: 1000 });
   s.setDone(a.id, true);
-  assert.deepStrictEqual(s.list().map((i) => i.title), ['B', 'A']);
+  assert.deepStrictEqual(s.list().map((i) => i.title), ['B']);
+  assert.deepStrictEqual(s.list({ includeDone: true }).map((i) => i.title), ['A', 'B']);
   assert.throws(() => s.upsert({ title: '  ' }));
+});
+
+test('concluída não é recriada quando a coleta reenvia o mesmo item; some após 14 dias', () => {
+  const s = createStore();
+  const a = s.upsert({ title: 'Email X', kind: 'email', source: 'outlook', externalId: 'm1' });
+  s.setDone(a.id, true);
+  s.upsert({ title: 'Email X', kind: 'email', source: 'outlook', externalId: 'm1' });
+  assert.strictEqual(s.list().length, 0);
+  s.prune(14 * 24 * 3600e3, Date.now() + 15 * 24 * 3600e3);
+  assert.strictEqual(s.list({ includeDone: true }).length, 0);
 });
 
 test('kind e due são preservados; kind inválido vira manual', () => {
@@ -51,7 +62,7 @@ test('sync marca como concluído o que sumiu, só nos tipos coletados com sucess
   s.upsert({ title: 'C1', kind: 'chat', source: 'teams', externalId: 'c1' });
   const man = s.upsert({ title: 'minha nota' });
   s.sync([], ['email']); // chat falhou na coleta
-  const byTitle = Object.fromEntries(s.list().map((i) => [i.title, i.done]));
+  const byTitle = Object.fromEntries(s.snapshot().map((i) => [i.title, i.done]));
   assert.strictEqual(byTitle.M1, true);
   assert.strictEqual(byTitle.C1, false);
   assert.strictEqual(byTitle['minha nota'], false);

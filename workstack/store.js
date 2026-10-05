@@ -16,7 +16,7 @@ const mergeable = (k) => k === 'email' || k === 'meeting';
 
 function createStore(initial = []) {
   // Migração: notas criadas pelo observador antes do campo `opened` existir.
-  let items = Array.isArray(initial) ? initial.map((i) => (i.origin === 'watch' ? { ...i, opened: true } : i)) : [];
+  let items = Array.isArray(initial) ? initial.map((i) => (i.origin === 'watch' ? { ...i, opened: true } : i)).map((i) => (i.done && !i.doneAt ? { ...i, doneAt: Date.now() } : i)) : [];
   let seq = items.reduce((m, i) => Math.max(m, Number(i.id) || 0), 0);
 
   const hasRef = (i, source, externalId) =>
@@ -71,6 +71,7 @@ function createStore(initial = []) {
       priority: PRIORITIES.includes(input.priority) ? input.priority : DEFAULT_PRIORITY,
       startedAt: input.startedAt ? new Date(input.startedAt).getTime() : Date.now(),
       done: false,
+      doneAt: null,
     };
     items.push(item);
     return item;
@@ -85,31 +86,26 @@ function createStore(initial = []) {
 
   const setDone = (id, done) => {
     const it = items.find((i) => i.id === id);
-    if (it) it.done = !!done;
+    if (it) { it.done = !!done; it.doneAt = done ? Date.now() : null; }
     return it;
   };
   const remove = (id) => { items = items.filter((i) => i.id !== id); };
 
   // Ordem de início: a mais antiga embaixo, a mais nova no topo da pilha.
-  // Concluídas vão para o fim da lista de exibição.
-  function list({ priority } = {}) {
+  // Concluídas somem da lista, mas continuam guardadas por um tempo: sem isso a coleta
+  // recriaria a nota na próxima execução (ex.: e-mail que continua não lido).
+  function list({ priority, includeDone = false } = {}) {
     return items
-      .filter((i) => !priority || i.priority === priority)
-      .sort((a, b) => Number(a.done) - Number(b.done) || b.startedAt - a.startedAt);
+      .filter((i) => (includeDone || !i.done) && (!priority || i.priority === priority))
+      .sort((a, b) => b.startedAt - a.startedAt);
   }
 
-  // Reconcilia com o snapshot de um coletor: insere/atualiza os itens recebidos e
-  // marca como concluídos os itens de `okKinds` que sumiram da origem (e-mail lido,
-  // reunião passou, tarefa fechada). Tipos que falharam na coleta não são tocados.
-  function sync(incoming, okKinds) {
-    const seen = new Set();
-    incoming.forEach((i) => { const it = upsert(i); seen.add(it.id); });
-    items.forEach((it) => {
-      if (!it.opened && it.externalId && okKinds.includes(it.kind) && !seen.has(it.id)) it.done = true;
-    });
+  const DAY = 24 * 3600e3;
+  function prune(maxAgeMs = 14 * DAY, now = Date.now()) {
+    items = items.filter((i) => !(i.done && i.doneAt && now - i.doneAt > maxAgeMs));
   }
 
-  return { upsert, sync, setPriority, setDone, remove, list, snapshot: () => items.slice() };
+  return { upsert, sync, prune, setPriority, setDone, remove, list, snapshot: () => items.slice() };
 }
 
 module.exports = { createStore, PRIORITIES, KINDS, normTitle };
