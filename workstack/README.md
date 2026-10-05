@@ -42,6 +42,20 @@ Com o app aberto, ele observa a janela em primeiro plano e, quando você fica 2 
 - WhatsApp Desktop só mostra "WhatsApp" no título, então vem pela coleta agendada (pergunta recebida e sem resposta sua).
 - Para ajustar os padrões aos seus títulos reais: `$env:WORKSTACK_DEBUG_TITLES="1"; npm start` imprime `processo | título -> nota` no terminal.
 
+### Início automático e configurações
+Botão 🚀 no topo liga/desliga a abertura junto com o Windows (esmaecido = desligado). As opções ficam salvas em `%APPDATA%\workstack\settings.json`, então não dependem de variáveis de ambiente da sessão:
+```powershell
+cd workstack
+node bin/config.js inbox "C:\Users\VOCE\OneDrive - Gantech\workstack-inbox.json"
+node bin/config.js ignore "Clientes,Projetos"
+node bin/config.js autostart on
+node bin/config.js            # mostra tudo
+```
+Variáveis de ambiente (`WORKSTACK_INBOX`, `WORKSTACK_IGNORE`, `WORKSTACK_WATCH=0`), quando definidas, têm precedência. No modo `npm start` o início automático aponta para a pasta atual do app: se você mover a pasta, desligue e ligue o 🚀 de novo.
+
+### Duplicatas
+E-mail e reunião com o mesmo assunto (ignorando `RE:`, `RES:`, `ENC:`, `FW:`, `Convite:`, `Atualizado:`, `Aceito:`… e um sufixo ` @ data`) viram **uma nota só**: a mais antiga mantém posição e cor, vira "reunião" se vier do calendário, e as duas origens ficam vinculadas (reenvios da coleta não recriam a nota). Chats e WhatsApp nunca se misturam. Notas abertas por você não são concluídas automaticamente pela coleta.
+
 ### Coleta automática (OneDrive)
 Uma tarefa agendada no Claude (prompt em `collector/PROMPT.md`) lê Outlook, Teams e calendário, roda `bin/build-inbox.js` e grava `workstack-inbox.json` no OneDrive. O app lê esse arquivo a cada 30 s:
 ```bash

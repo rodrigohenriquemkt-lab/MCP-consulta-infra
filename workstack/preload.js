@@ -9,6 +9,8 @@ contextBridge.exposeInMainWorld('ws', {
   open: (u) => ipcRenderer.invoke('open', u),
   toggleWatch: () => ipcRenderer.invoke('watch-toggle'),
   watchState: () => ipcRenderer.invoke('watch-state'),
+  autoState: () => ipcRenderer.invoke('auto-state'),
+  toggleAuto: () => ipcRenderer.invoke('auto-toggle'),
   close: () => ipcRenderer.invoke('close'),
   onItems: (cb) => ipcRenderer.on('items', (_e, items) => cb(items)),
 });

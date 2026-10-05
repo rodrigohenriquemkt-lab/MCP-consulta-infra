@@ -5,9 +5,10 @@ const fs = require('fs');
 const path = require('path');
 const { createStore } = require('./store');
 const { startWatcher } = require('./watcher/window');
+const settings = require('./settings');
 
 const INGEST_PORT = Number(process.env.WORKSTACK_PORT || 47800);
-let win, store, file, lastInbox = 0, watcher = null;
+let win, store, file, cfgFile, cfg, lastInbox = 0, watcher = null;
 
 const load = () => { try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return []; } };
 const save = () => fs.writeFileSync(file, JSON.stringify(store.snapshot(), null, 2));
@@ -20,11 +21,18 @@ function onOpened(p) {
   if (it.done) store.setDone(it.id, false);
   save(); push();
 }
+// Início automático: registra o app para abrir ao entrar no Windows. Em desenvolvimento
+// (npm start) registra o electron.exe apontando para a pasta do app; empacotado, o próprio .exe.
+const applyAutostart = (on) => app.setLoginItemSettings({
+  openAtLogin: !!on, path: process.execPath, args: app.isPackaged ? [] : [app.getAppPath()],
+});
+const persist = (patch) => { cfg = { ...cfg, ...patch }; const s = settings.load(cfgFile); settings.save(cfgFile, { ...s, ...patch }); };
+
 const setWatch = (on) => {
   if (watcher) { watcher.stop(); watcher = null; }
   if (on) { const w = startWatcher(onOpened, {
     debug: process.env.WORKSTACK_DEBUG_TITLES === '1',
-    ignore: new Set((process.env.WORKSTACK_IGNORE || '').split(',').map((x) => x.trim().toLowerCase()).filter(Boolean)),
+    ignore: new Set(cfg.ignore.map((x) => x.toLowerCase())),
   }); watcher = w.supported ? w : null; }
   return !!watcher;
 };
@@ -69,7 +77,7 @@ function startIngest() {
 // Arquivo de troca com o coletor na nuvem (ex.: pasta do OneDrive sincronizada).
 // Formato: { generatedAt, okKinds: ['email',...], items: [...payloads do /ingest] }
 function pollInbox() {
-  const f = process.env.WORKSTACK_INBOX;
+  const f = cfg.inbox;
   if (!f) return;
   try {
     const m = fs.statSync(f).mtimeMs;
@@ -87,11 +95,14 @@ app.on('second-instance', () => { if (win) { win.show(); win.focus(); } });
 app.whenReady().then(() => {
   if (!app.hasSingleInstanceLock()) return;
   file = path.join(app.getPath('userData'), 'workstack.json');
+  cfgFile = path.join(app.getPath('userData'), 'settings.json');
+  cfg = settings.resolve(cfgFile);
   store = createStore(load());
   createWindow();
   startIngest();
   pollInbox();
-  if (process.env.WORKSTACK_WATCH !== '0') setWatch(true);
+  if (cfg.watch) setWatch(true);
+  applyAutostart(cfg.autostart);
   setInterval(pollInbox, 30000);
 
   ipcMain.handle('list', () => store.list());
@@ -100,7 +111,9 @@ app.whenReady().then(() => {
   ipcMain.handle('done', (_e, id, d) => { store.setDone(id, d); save(); push(); });
   ipcMain.handle('remove', (_e, id) => { store.remove(id); save(); push(); });
   ipcMain.handle('open', (_e, url) => { if (/^https?:\/\//.test(url)) shell.openExternal(url); });
-  ipcMain.handle('watch-toggle', () => setWatch(!watcher));
+  ipcMain.handle('watch-toggle', () => { const on = setWatch(!watcher); persist({ watch: on }); return on; });
+  ipcMain.handle('auto-state', () => !!cfg.autostart);
+  ipcMain.handle('auto-toggle', () => { const on = !cfg.autostart; persist({ autostart: on }); applyAutostart(on); return on; });
   ipcMain.handle('watch-state', () => !!watcher);
   ipcMain.handle('close', () => app.quit());
 

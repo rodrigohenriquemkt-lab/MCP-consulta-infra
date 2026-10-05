@@ -71,3 +71,42 @@ test('sync não conclui itens abertos pelo observador (origin=watch)', () => {
   s.sync([], ['chat']);
   assert.strictEqual(s.list()[0].done, false);
 });
+
+test('e-mail de convite e evento do calendário com o mesmo assunto viram uma nota só', () => {
+  const s = createStore();
+  const mail = s.upsert({ title: 'Convite: Reunião ACME @ seg 6 out', kind: 'email', source: 'outlook', externalId: 'm1', startedAt: 1000 });
+  s.setPriority(mail.id, 'blue');
+  const ev = s.upsert({ title: 'Reunião ACME', kind: 'meeting', source: 'calendar', externalId: 'e1', due: 9000, url: 'https://x', startedAt: 2000 });
+  assert.strictEqual(s.list().length, 1);
+  assert.strictEqual(ev.id, mail.id);
+  assert.strictEqual(ev.kind, 'meeting');
+  assert.strictEqual(ev.due, 9000);
+  assert.strictEqual(ev.priority, 'blue'); // cor escolhida é preservada
+  assert.strictEqual(ev.startedAt, 1000); // mantém a posição da mais antiga
+});
+
+test('reenvio do mesmo evento não recria a nota (alias)', () => {
+  const s = createStore();
+  s.upsert({ title: 'Reunião ACME', kind: 'email', source: 'outlook', externalId: 'm1' });
+  s.upsert({ title: 'Reunião ACME', kind: 'meeting', source: 'calendar', externalId: 'e1' });
+  s.upsert({ title: 'Reunião ACME (título editado)', kind: 'meeting', source: 'calendar', externalId: 'e1' });
+  assert.strictEqual(s.list().length, 1);
+});
+
+test('chats e e-mails com o mesmo texto não se misturam; assuntos diferentes não se unem', () => {
+  const s = createStore();
+  s.upsert({ title: 'Bruno Miguel', kind: 'chat', source: 'teams', externalId: 'c1' });
+  s.upsert({ title: 'Bruno Miguel', kind: 'email', source: 'outlook', externalId: 'm1' });
+  s.upsert({ title: 'Proposta A', kind: 'email', source: 'outlook', externalId: 'm2' });
+  s.upsert({ title: 'Proposta B', kind: 'email', source: 'outlook', externalId: 'm3' });
+  assert.strictEqual(s.list().length, 4);
+});
+
+test('item aberto pelo usuário não é concluído pela coleta quando some da origem', () => {
+  const s = createStore();
+  s.upsert({ title: 'Contrato X', kind: 'email', source: 'outlook', externalId: 'm1' });
+  s.upsert({ title: 'RES: Contrato X', kind: 'email', source: 'outlook', externalId: 'w:contrato x', origin: 'watch' });
+  s.sync([], ['email']); // e-mail foi lido, saiu da coleta
+  assert.strictEqual(s.list().length, 1);
+  assert.strictEqual(s.list()[0].done, false);
+});
