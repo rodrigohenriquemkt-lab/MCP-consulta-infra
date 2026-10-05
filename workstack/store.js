@@ -77,6 +77,20 @@ function createStore(initial = []) {
     return item;
   }
 
+  // Reconcilia com o snapshot de um coletor: insere/atualiza os itens recebidos e
+  // marca como concluídos os itens de `okKinds` que sumiram da origem (e-mail lido,
+  // reunião passou, tarefa fechada). Tipos que falharam na coleta não são tocados, e itens
+  // abertos pelo usuário (`opened`) só são concluídos por ele.
+  function sync(incoming, okKinds) {
+    const seen = new Set();
+    incoming.forEach((i) => { const it = upsert(i); seen.add(it.id); });
+    items.forEach((it) => {
+      if (!it.opened && !it.done && it.externalId && okKinds.includes(it.kind) && !seen.has(it.id)) {
+        it.done = true; it.doneAt = Date.now();
+      }
+    });
+  }
+
   function setPriority(id, priority) {
     if (!PRIORITIES.includes(priority)) throw new Error('prioridade inválida');
     const it = items.find((i) => i.id === id);
