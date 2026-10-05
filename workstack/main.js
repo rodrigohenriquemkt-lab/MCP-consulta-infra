@@ -6,7 +6,7 @@ const path = require('path');
 const { createStore } = require('./store');
 
 const INGEST_PORT = Number(process.env.WORKSTACK_PORT || 47800);
-let win, store, file;
+let win, store, file, lastInbox = 0;
 
 const load = () => { try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return []; } };
 const save = () => fs.writeFileSync(file, JSON.stringify(store.snapshot(), null, 2));
@@ -47,11 +47,27 @@ function startIngest() {
   }).listen(INGEST_PORT, '127.0.0.1');
 }
 
+// Arquivo de troca com o coletor na nuvem (ex.: pasta do OneDrive sincronizada).
+// Formato: { generatedAt, okKinds: ['email',...], items: [...payloads do /ingest] }
+function pollInbox() {
+  const f = process.env.WORKSTACK_INBOX;
+  if (!f) return;
+  try {
+    const m = fs.statSync(f).mtimeMs;
+    if (m === lastInbox) return;
+    const data = JSON.parse(fs.readFileSync(f, 'utf8'));
+    store.sync(Array.isArray(data.items) ? data.items : [], Array.isArray(data.okKinds) ? data.okKinds : []);
+    lastInbox = m; save(); push();
+  } catch (e) { /* arquivo ausente ou ainda sincronizando: tenta no próximo ciclo */ }
+}
+
 app.whenReady().then(() => {
   file = path.join(app.getPath('userData'), 'workstack.json');
   store = createStore(load());
   createWindow();
   startIngest();
+  pollInbox();
+  setInterval(pollInbox, 30000);
 
   ipcMain.handle('list', () => store.list());
   ipcMain.handle('add', (_e, t) => { store.upsert({ title: t }); save(); push(); });

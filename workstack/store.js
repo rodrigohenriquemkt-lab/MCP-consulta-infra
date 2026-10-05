@@ -65,7 +65,18 @@ function createStore(initial = []) {
       .sort((a, b) => Number(a.done) - Number(b.done) || b.startedAt - a.startedAt);
   }
 
-  return { upsert, setPriority, setDone, remove, list, snapshot: () => items.slice() };
+  // Reconcilia com o snapshot de um coletor: insere/atualiza os itens recebidos e
+  // marca como concluídos os itens de `okKinds` que sumiram da origem (e-mail lido,
+  // reunião passou, tarefa fechada). Tipos que falharam na coleta não são tocados.
+  function sync(incoming, okKinds) {
+    const seen = new Set();
+    incoming.forEach((i) => { const it = upsert(i); seen.add(it.id); });
+    items.forEach((it) => {
+      if (it.externalId && okKinds.includes(it.kind) && !seen.has(it.id)) it.done = true;
+    });
+  }
+
+  return { upsert, sync, setPriority, setDone, remove, list, snapshot: () => items.slice() };
 }
 
 module.exports = { createStore, PRIORITIES, KINDS };

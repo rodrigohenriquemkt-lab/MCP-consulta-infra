@@ -32,3 +32,12 @@ test('chat: só menção ou direta sem resposta', () => {
   assert.strictEqual(n.chat({ id: 'c1', text: 'oi' }, { now }), null);
   assert.ok(n.chat({ id: 'c2', mentionsMe: true, text: '@rodrigo' }, { now }));
 });
+
+test('build-inbox: tipo com falha não entra em okKinds', () => {
+  const { execFileSync } = require('node:child_process');
+  const out = JSON.parse(execFileSync('node', [require('path').join(__dirname, '../bin/build-inbox.js')], {
+    input: JSON.stringify({ email: [{ id: '1', isRead: false, subject: 'x' }], chat: [], failed: ['chat'] }),
+  }));
+  assert.deepStrictEqual(out.okKinds, ['email']);
+  assert.strictEqual(out.items.length, 1);
+});

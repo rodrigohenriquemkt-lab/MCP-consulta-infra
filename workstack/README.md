@@ -34,4 +34,11 @@ Regras em `connectors/normalize.js`. Entrada crua (formato Microsoft Graph) → 
 echo '[{"id":"e1","subject":"Reunião ACME","start":{"dateTime":"2026-10-05T15:00:00Z"}}]' | node bin/push.js meeting
 ```
 
-Próximo passo: um *conector* (tarefa agendada no Claude, ou serviço usando Microsoft Graph) que varre Outlook/Teams e chama esse endpoint.
+### Coleta automática (OneDrive)
+Uma tarefa agendada no Claude (prompt em `collector/PROMPT.md`) lê Outlook, Teams e calendário, roda `bin/build-inbox.js` e grava `workstack-inbox.json` no OneDrive. O app lê esse arquivo a cada 30 s:
+```bash
+WORKSTACK_INBOX="$HOME/OneDrive - Gantech/workstack-inbox.json" npm start   # ajuste o caminho
+```
+Itens que somem da origem (e-mail lido, reunião passada) são marcados como concluídos; a cor que você escolheu é preservada; tipos cuja coleta falhou não são alterados. Tarefas (To Do) ainda não são coletadas: não há ferramenta disponível.
+
+Próximo passo (histórico): um *conector* (tarefa agendada no Claude, ou serviço usando Microsoft Graph) que varre Outlook/Teams e chama esse endpoint.
