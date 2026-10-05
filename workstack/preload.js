@@ -7,6 +7,8 @@ contextBridge.exposeInMainWorld('ws', {
   done: (id, d) => ipcRenderer.invoke('done', id, d),
   remove: (id) => ipcRenderer.invoke('remove', id),
   open: (u) => ipcRenderer.invoke('open', u),
+  toggleWatch: () => ipcRenderer.invoke('watch-toggle'),
+  watchState: () => ipcRenderer.invoke('watch-state'),
   close: () => ipcRenderer.invoke('close'),
   onItems: (cb) => ipcRenderer.on('items', (_e, items) => cb(items)),
 });

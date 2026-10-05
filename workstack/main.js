@@ -4,13 +4,27 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const { createStore } = require('./store');
+const { startWatcher } = require('./watcher/window');
 
 const INGEST_PORT = Number(process.env.WORKSTACK_PORT || 47800);
-let win, store, file, lastInbox = 0;
+let win, store, file, lastInbox = 0, watcher = null;
 
 const load = () => { try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return []; } };
 const save = () => fs.writeFileSync(file, JSON.stringify(store.snapshot(), null, 2));
 const push = () => win && win.webContents.send('items', store.list());
+
+// Item aberto pelo usuário no Outlook/Teams (via observador de janela) entra na pilha;
+// se já existia, não muda de posição; se estava concluído, volta a ficar em andamento.
+function onOpened(p) {
+  const it = store.upsert({ title: p.title, kind: p.kind, source: p.source, externalId: `${p.source}:${p.key}`, origin: 'watch' });
+  if (it.done) store.setDone(it.id, false);
+  save(); push();
+}
+const setWatch = (on) => {
+  if (watcher) { watcher.stop(); watcher = null; }
+  if (on) { const w = startWatcher(onOpened, { debug: process.env.WORKSTACK_DEBUG_TITLES === '1' }); watcher = w.supported ? w : null; }
+  return !!watcher;
+};
 
 function createWindow() {
   win = new BrowserWindow({
@@ -67,6 +81,7 @@ app.whenReady().then(() => {
   createWindow();
   startIngest();
   pollInbox();
+  if (process.env.WORKSTACK_WATCH !== '0') setWatch(true);
   setInterval(pollInbox, 30000);
 
   ipcMain.handle('list', () => store.list());
@@ -75,6 +90,8 @@ app.whenReady().then(() => {
   ipcMain.handle('done', (_e, id, d) => { store.setDone(id, d); save(); push(); });
   ipcMain.handle('remove', (_e, id) => { store.remove(id); save(); push(); });
   ipcMain.handle('open', (_e, url) => { if (/^https?:\/\//.test(url)) shell.openExternal(url); });
+  ipcMain.handle('watch-toggle', () => setWatch(!watcher));
+  ipcMain.handle('watch-state', () => !!watcher);
   ipcMain.handle('close', () => app.quit());
 
   globalShortcut.register('CommandOrControl+Shift+Space', () => {
@@ -82,5 +99,5 @@ app.whenReady().then(() => {
   });
 });
 
-app.on('will-quit', () => globalShortcut.unregisterAll());
+app.on('will-quit', () => { globalShortcut.unregisterAll(); if (watcher) watcher.stop(); });
 app.on('window-all-closed', () => app.quit());

@@ -41,3 +41,15 @@ test('build-inbox: tipo com falha não entra em okKinds', () => {
   assert.deepStrictEqual(out.okKinds, ['email']);
   assert.strictEqual(out.items.length, 1);
 });
+
+test('whatsapp: pergunta sem resposta entra; respondida ou grupo sem menção não', () => {
+  const now = Date.parse('2026-10-05T12:00:00Z');
+  const t = (h) => new Date(now - h * H).toISOString();
+  const open = n.whatsapp({ id: 'w1', chatName: 'Cliente X', messages: [{ text: 'Bom dia', timestamp: t(6) }, { text: 'Consegue me enviar a proposta?', timestamp: t(5) }] }, { now });
+  assert.strictEqual(open.kind, 'whatsapp');
+  assert.strictEqual(open.priority, 'orange');
+  const answered = n.whatsapp({ id: 'w2', messages: [{ text: 'Pode?', timestamp: t(3) }, { text: 'Posso sim', fromMe: true, timestamp: t(2) }] }, { now });
+  assert.strictEqual(answered, null);
+  assert.strictEqual(n.whatsapp({ id: 'w3', isGroup: true, messages: [{ text: 'Alguém sabe?', timestamp: t(1) }] }, { now }), null);
+  assert.ok(n.whatsapp({ id: 'w4', isGroup: true, mentionsMe: true, messages: [{ text: 'Rodrigo, qual o prazo', timestamp: t(1) }] }, { now }));
+});

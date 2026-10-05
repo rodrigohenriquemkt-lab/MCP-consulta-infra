@@ -64,3 +64,10 @@ test('sync preserva a prioridade escolhida pelo usuário', () => {
   s.sync([{ title: 'A v2', kind: 'task', source: 't', externalId: '1', priority: 'red' }], ['task']);
   assert.strictEqual(s.list()[0].priority, 'blue');
 });
+
+test('sync não conclui itens abertos pelo observador (origin=watch)', () => {
+  const s = createStore();
+  s.upsert({ title: 'Maria', kind: 'chat', source: 'teams', externalId: 'teams:maria', origin: 'watch' });
+  s.sync([], ['chat']);
+  assert.strictEqual(s.list()[0].done, false);
+});

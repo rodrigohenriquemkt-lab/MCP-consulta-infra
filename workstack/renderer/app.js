@@ -1,6 +1,6 @@
 'use strict';
 const COLORS = ['red', 'orange', 'yellow', 'green', 'blue'];
-const ICONS = { email: '✉', chat: '💬', meeting: '📅', task: '☑', manual: '✎' };
+const ICONS = { email: '✉', chat: '💬', meeting: '📅', task: '☑', whatsapp: '📱', manual: '✎' };
 const stack = document.getElementById('stack');
 const filters = document.getElementById('filters');
 let items = [], filter = null;
@@ -43,6 +43,10 @@ COLORS.forEach((c) => {
 document.getElementById('new').addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && e.target.value.trim()) { window.ws.add(e.target.value); e.target.value = ''; }
 });
+const eye = document.getElementById('watch');
+const showWatch = (on) => { eye.textContent = on ? '👁' : '🚫'; eye.title = on ? 'Observando Outlook/Teams (clique para pausar)' : 'Observação pausada'; };
+eye.onclick = () => window.ws.toggleWatch().then(showWatch);
+window.ws.watchState().then(showWatch);
 document.getElementById('quit').onclick = () => window.ws.close();
 window.ws.onItems((x) => { items = x; render(); });
 window.ws.list().then((x) => { items = x; render(); });

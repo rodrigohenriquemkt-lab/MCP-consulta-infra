@@ -71,7 +71,34 @@ function task(t, { now = Date.now() } = {}) {
   };
 }
 
-const NORMALIZERS = { email, chat, meeting, task };
+// WhatsApp: pergunta recebida e ainda sem resposta sua. `m.messages` em ordem cronológica;
+// só conta o que veio depois da sua última mensagem (fromMe).
+const QUESTION_START = /^(voc[êe]|vc|pode|poderia|consegue|conseguiria|quando|qual|quais|como|onde|quanto|quantos|tem como|ser[áa]|d[áa] para|me (envia|manda|passa))\b/i;
+const looksLikeQuestion = (t) => {
+  const s = String(t || '').trim();
+  const noVocative = s.replace(/^[^,?!.]{1,30},\s*/, ''); // "Rodrigo, qual o prazo" -> "qual o prazo"
+  return /\?/.test(s) || QUESTION_START.test(s) || QUESTION_START.test(noVocative);
+};
+
+function whatsapp(m, { now = Date.now() } = {}) {
+  const msgs = m.messages || [];
+  let lastMine = -1;
+  msgs.forEach((x, i) => { if (x.fromMe) lastMine = i; });
+  const pending = msgs.slice(lastMine + 1).filter((x) => x.text && looksLikeQuestion(x.text));
+  if (!pending.length) return null;
+  if (m.isGroup && !m.mentionsMe) return null; // em grupos, só se mencionarem você
+  const q = pending[pending.length - 1];
+  const ts = new Date(q.timestamp).getTime();
+  const age = now - ts;
+  return {
+    kind: 'whatsapp', source: 'whatsapp', externalId: m.id,
+    title: `${m.chatName || 'Contato'}: ${String(q.text).slice(0, 80)}`,
+    detail: String(q.text).slice(0, 200), startedAt: ts,
+    priority: age > 24 * H ? 'red' : age > 4 * H ? 'orange' : 'yellow',
+  };
+}
+
+const NORMALIZERS = { email, chat, meeting, task, whatsapp };
 const normalizeAll = (kind, list, opts) =>
   (list || []).map((x) => NORMALIZERS[kind](x, opts)).filter(Boolean);
 

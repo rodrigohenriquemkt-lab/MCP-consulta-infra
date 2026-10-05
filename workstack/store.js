@@ -3,7 +3,7 @@
 
 const PRIORITIES = ['red', 'orange', 'yellow', 'green', 'blue'];
 const DEFAULT_PRIORITY = 'yellow';
-const KINDS = ['email', 'chat', 'meeting', 'task', 'manual'];
+const KINDS = ['email', 'chat', 'meeting', 'task', 'whatsapp', 'manual'];
 
 function createStore(initial = []) {
   let items = Array.isArray(initial) ? initial.slice() : [];
@@ -33,6 +33,7 @@ function createStore(initial = []) {
       source,
       externalId: input.externalId || null,
       url: input.url || null,
+      origin: input.origin || 'ingest',
       kind: KINDS.includes(input.kind) ? input.kind : 'manual',
       due: input.due ? new Date(input.due).getTime() : null,
       priority: PRIORITIES.includes(input.priority) ? input.priority : DEFAULT_PRIORITY,
@@ -72,7 +73,7 @@ function createStore(initial = []) {
     const seen = new Set();
     incoming.forEach((i) => { const it = upsert(i); seen.add(it.id); });
     items.forEach((it) => {
-      if (it.externalId && okKinds.includes(it.kind) && !seen.has(it.id)) it.done = true;
+      if (it.origin !== 'watch' && it.externalId && okKinds.includes(it.kind) && !seen.has(it.id)) it.done = true;
     });
   }
 
