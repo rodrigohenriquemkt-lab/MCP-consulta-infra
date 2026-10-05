@@ -22,7 +22,10 @@ function onOpened(p) {
 }
 const setWatch = (on) => {
   if (watcher) { watcher.stop(); watcher = null; }
-  if (on) { const w = startWatcher(onOpened, { debug: process.env.WORKSTACK_DEBUG_TITLES === '1' }); watcher = w.supported ? w : null; }
+  if (on) { const w = startWatcher(onOpened, {
+    debug: process.env.WORKSTACK_DEBUG_TITLES === '1',
+    ignore: new Set((process.env.WORKSTACK_IGNORE || '').split(',').map((x) => x.trim().toLowerCase()).filter(Boolean)),
+  }); watcher = w.supported ? w : null; }
   return !!watcher;
 };
 

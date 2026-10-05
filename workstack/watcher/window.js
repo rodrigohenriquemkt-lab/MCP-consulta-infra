@@ -13,6 +13,8 @@ const TEAMS_VIEWS = new Set(['chat', 'bate-papo', 'conversa', 'calendar', 'calen
   'atividade', 'teams', 'equipes', 'communities', 'comunidades', 'calls', 'chamadas', 'files', 'arquivos',
   'onedrive', 'apps', 'more', 'mais', 'feed', 'copilot', 'novo chat', 'new chat']);
 
+// RE:/RES:/ENC:/FW: não geram nota nova para a mesma conversa
+const THREAD_PREFIX = /^((re|res|enc|fw|fwd|rv)\s*:\s*)+/i;
 const strip = (t) => String(t || '').replace(/^\(\d+\)\s*/, '').replace(/\s+/g, ' ').trim();
 const KIND_BY_WORD = [
   [/^(mensagem|message|discuss[ãa]o|discussion)$/i, 'email'],
@@ -26,15 +28,16 @@ function parseOutlook(proc, title) {
   if (m) {
     const subject = strip(m[1]);
     const kind = (KIND_BY_WORD.find(([re]) => re.test(m[2])) || [])[1];
-    if (subject && kind && !/^(sem t[ií]tulo|untitled)$/i.test(subject)) return { kind, source: 'outlook', key: subject.toLowerCase(), title: subject };
+    if (subject && kind && !/^(sem t[ií]tulo|untitled)$/i.test(subject)) return { kind, source: 'outlook', key: subject.toLowerCase().replace(THREAD_PREFIX, ''), title: subject };
     return null;
   }
-  // Novo Outlook (olk): janela destacada, melhor esforço. A janela principal tem 3+ partes
-  // ("Mail - Nome - Outlook") e é ignorada; só vale "Assunto - Outlook" com 2 partes.
+  // Novo Outlook (olk): "Assunto – Nome | Empresa – Outlook" (hífen ou travessão). Remove o
+  // sufixo "Outlook" e o segmento da conta; o que sobra é o assunto ou o nome da pasta/tela.
   if (proc === 'olk') {
-    const parts = title.split(' - ').map(strip);
-    if (parts.length === 2 && /^outlook$/i.test(parts[1]) && parts[0] && !OUTLOOK_VIEWS.has(parts[0].toLowerCase())) {
-      return { kind: 'email', source: 'outlook', key: parts[0].toLowerCase(), title: parts[0] };
+    const m2 = title.match(/^(.*?)\s[-–—]\s[^-–—]*\s[-–—]\s*Outlook$/i);
+    const subject = m2 ? strip(m2[1]) : '';
+    if (subject && !OUTLOOK_VIEWS.has(subject.toLowerCase())) {
+      return { kind: 'email', source: 'outlook', key: subject.toLowerCase().replace(THREAD_PREFIX, ''), title: subject };
     }
   }
   return null;
@@ -43,15 +46,21 @@ function parseOutlook(proc, title) {
 function parseTeams(title) {
   const parts = title.split('|').map(strip).filter(Boolean);
   if (parts.length && /^microsoft teams$/i.test(parts[parts.length - 1])) parts.pop();
+  const isChat = parts.length && /^(chat|bate-papo|conversa)$/i.test(parts[0]);
   while (parts.length && TEAMS_VIEWS.has(parts[0].toLowerCase())) parts.shift();
   if (!parts.length) return null;
-  const name = parts.join(' · ');
+  const name = (isChat && parts.length >= 2) ? parts[0] : parts.join(' · '); // conversa: "Chat | Nome | Org" -> Nome
   const kind = /reuni[ãa]o|meeting|chamada|call/i.test(parts[0]) ? 'meeting' : 'chat';
   return { kind, source: 'teams', key: name.toLowerCase(), title: name };
 }
 
 // proc: nome do processo sem .exe; title: título da janela. Retorna null se não for relevante.
-function parseWindow(proc, title) {
+function parseWindow(proc, title, { ignore } = {}) {
+  const r = parseRaw(proc, title);
+  return r && ignore && ignore.has(r.title.toLowerCase()) ? null : r;
+}
+
+function parseRaw(proc, title) {
   const p = String(proc || '').toLowerCase();
   const t = String(title || '');
   if (!t) return null;
@@ -87,7 +96,7 @@ while ($true) {
 
 // onOpen(item) é chamado quando a mesma janela relevante fica em foco por `dwellMs`
 // (evita registrar alt-tab de passagem).
-function startWatcher(onOpen, { dwellMs = 4000, debug = false, platform = process.platform } = {}) {
+function startWatcher(onOpen, { dwellMs = 2000, debug = false, ignore, platform = process.platform } = {}) {
   if (platform !== 'win32') return { stop() {}, supported: false };
   const child = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-EncodedCommand',
     Buffer.from(PS, 'utf16le').toString('base64')], { windowsHide: true });
@@ -102,9 +111,9 @@ function startWatcher(onOpen, { dwellMs = 4000, debug = false, platform = proces
       if (cut < 0) continue;
       const proc = line.slice(0, cut), title = line.slice(cut + 1);
       clearTimeout(timer);
-      const parsed = parseWindow(proc, title);
+      const parsed = parseWindow(proc, title, { ignore });
       if (debug && /^(outlook|olk|ms-teams|teams|msteams)$/i.test(proc)) console.log(`[watch] ${proc} | ${title} -> ${parsed ? parsed.title : '(ignorado)'}`);
-      if (parsed) timer = setTimeout(() => onOpen(parsed), dwellMs);
+      if (parsed) timer = setTimeout(() => { if (debug) console.log(`[watch] + nota: ${parsed.title}`); onOpen(parsed); }, dwellMs);
     }
   });
   child.on('error', () => {});

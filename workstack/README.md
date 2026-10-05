@@ -35,9 +35,10 @@ echo '[{"id":"e1","subject":"Reunião ACME","start":{"dateTime":"2026-10-05T15:0
 ```
 
 ### Itens que você abre (observador de janela, Windows)
-Com o app aberto, ele observa a janela em primeiro plano e, quando você fica 4 s num **e-mail/reunião aberto em janela própria (Outlook)** ou numa **conversa/canal/reunião do Teams (desktop)**, cria a nota. Reabrir não muda a posição; se estava concluída, volta para em andamento. Botão 👁 no topo pausa/retoma; `WORKSTACK_WATCH=0` desliga.
+Com o app aberto, ele observa a janela em primeiro plano e, quando você fica 2 s num **e-mail/reunião aberto em janela própria (Outlook)** ou numa **conversa/canal/reunião do Teams (desktop)**, cria a nota. Reabrir não muda a posição; se estava concluída, volta para em andamento. Botão 👁 no topo pausa/retoma; `WORKSTACK_WATCH=0` desliga.
 - Só lê o título de Outlook e Teams; qualquer outro app é descartado sem armazenar.
-- Outlook com **painel de leitura** não expõe o assunto no título da janela: só abrindo o e-mail em janela própria (duplo clique).
+- **Novo Outlook:** o título da janela traz o assunto (formato `Assunto – Conta – Outlook`), inclusive no painel de leitura. Pastas personalizadas aparecem como se fossem assuntos: silencie-as com `WORKSTACK_IGNORE="Clientes,Projetos"`.
+- **Outlook clássico:** só e-mails abertos em janela própria (duplo clique).
 - WhatsApp Desktop só mostra "WhatsApp" no título, então vem pela coleta agendada (pergunta recebida e sem resposta sua).
 - Para ajustar os padrões aos seus títulos reais: `$env:WORKSTACK_DEBUG_TITLES="1"; npm start` imprime `processo | título -> nota` no terminal.
 
