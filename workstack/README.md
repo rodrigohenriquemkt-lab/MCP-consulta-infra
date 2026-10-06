@@ -65,8 +65,8 @@ O app só aceita HTTPS e não imprime o token inteiro. Para desligar: `node bin/
 
 ### Coleta automática (OneDrive)
 Uma tarefa agendada lê Outlook, Teams, calendário e WhatsApp, roda `bin/build-inbox.js` e grava `workstack-inbox.json`. Há duas versões do prompt:
-- `collector/PROMPT_COWORK.md` — **recomendada**: roda como **rotina local do Claude Code Desktop** (aba Code → Routines → New routine → Local), com a pasta do OneDrive como pasta de trabalho, e grava a coleta crua direto nela; o app normaliza. Só dispara com o app aberto e o computador ligado. (Tarefas agendadas do *Cowork* rodam na nuvem e não enxergam pastas locais: não servem para isto.)
-- `collector/PROMPT.md` — roda na nuvem e envia o arquivo pelo conector Microsoft 365; **só funciona se o conector tiver permissão de escrita em arquivos** (`Files.ReadWrite`); com a permissão atual de leitura, o upload falha com erro 403.
+- `collector/PROMPT.md` — **tarefa na nuvem** (claude.ai → Routines), que envia a coleta crua à ponte `../workstack-relay` pelo conector "Workstack Relay" (ver "Ponte na nuvem" acima). Não precisa de Node, de clone do repositório nem de permissão de escrita no OneDrive.
+- `collector/PROMPT_COWORK.md` — alternativa **local**: rotina local do Claude Code Desktop (aba Code → Routines → New routine → Local) que grava a coleta crua na pasta do OneDrive. Só dispara com o app aberto e o computador ligado. (Tarefas do *Cowork* rodam na nuvem e não enxergam pastas locais.) Para a nuvem gravar no OneDrive seria preciso a permissão `Files.ReadWrite` no conector Microsoft 365; com a atual (leitura) o upload falha com 403.
 
 O app lê o arquivo a cada 30 s e aceita tanto o arquivo já normalizado (`{items, okKinds}`) quanto a coleta crua (`{email, chat, meeting, whatsapp, failed}`): O app lê esse arquivo a cada 30 s:
 ```bash
