@@ -5,7 +5,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const DEFAULTS = { inbox: null, ignore: [], watch: true, autostart: false };
+const DEFAULTS = { inbox: null, ignore: [], watch: true, autostart: false, me: null };
 
 // Mesmo local que app.getPath('userData') do Electron para o app "workstack".
 function settingsPath(platform = process.platform, env = process.env) {
@@ -33,6 +33,7 @@ function resolve(file, env = process.env) {
     inbox: env.WORKSTACK_INBOX || s.inbox,
     ignore: env.WORKSTACK_IGNORE ? list(env.WORKSTACK_IGNORE) : s.ignore,
     watch: env.WORKSTACK_WATCH === '0' ? false : s.watch,
+    me: env.WORKSTACK_ME || s.me,
   };
 }
 

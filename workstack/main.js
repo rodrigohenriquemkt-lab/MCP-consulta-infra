@@ -6,6 +6,7 @@ const path = require('path');
 const { createStore } = require('./store');
 const { startWatcher } = require('./watcher/window');
 const settings = require('./settings');
+const { buildInbox } = require('./connectors/build');
 
 const INGEST_PORT = Number(process.env.WORKSTACK_PORT || 47800);
 let win, store, file, cfgFile, cfg, lastInbox = 0, watcher = null;
@@ -83,7 +84,10 @@ function pollInbox() {
     const m = fs.statSync(f).mtimeMs;
     if (m === lastInbox) return;
     const data = JSON.parse(fs.readFileSync(f, 'utf8'));
-    store.sync(Array.isArray(data.items) ? data.items : [], Array.isArray(data.okKinds) ? data.okKinds : []);
+    // Aceita o arquivo já normalizado ({items, okKinds}) ou a coleta crua ({email, chat, ...}),
+    // que o próprio app normaliza (dispensa Node no coletor).
+    const snap = Array.isArray(data.items) ? data : buildInbox(data, { me: cfg.me });
+    store.sync(snap.items, Array.isArray(snap.okKinds) ? snap.okKinds : []);
     lastInbox = m; save(); push();
   } catch (e) { /* arquivo ausente ou ainda sincronizando: tenta no próximo ciclo */ }
 }

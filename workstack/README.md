@@ -58,10 +58,10 @@ E-mail e reunião com o mesmo assunto (ignorando `RE:`, `RES:`, `ENC:`, `FW:`, `
 
 ### Coleta automática (OneDrive)
 Uma tarefa agendada lê Outlook, Teams, calendário e WhatsApp, roda `bin/build-inbox.js` e grava `workstack-inbox.json`. Há duas versões do prompt:
-- `collector/PROMPT_COWORK.md` — **recomendada**: roda no Cowork (desktop) e grava direto na pasta local do OneDrive, sem permissão de upload.
+- `collector/PROMPT_COWORK.md` — **recomendada**: roda no Cowork (desktop, com "Require this computer") e grava a coleta crua direto na pasta local do OneDrive; o app normaliza. Só precisa de acesso à pasta do OneDrive (sem Node, sem a pasta do app).
 - `collector/PROMPT.md` — roda na nuvem e envia o arquivo pelo conector Microsoft 365; **só funciona se o conector tiver permissão de escrita em arquivos** (`Files.ReadWrite`); com a permissão atual de leitura, o upload falha com erro 403.
 
-O app lê o arquivo a cada 30 s: O app lê esse arquivo a cada 30 s:
+O app lê o arquivo a cada 30 s e aceita tanto o arquivo já normalizado (`{items, okKinds}`) quanto a coleta crua (`{email, chat, meeting, whatsapp, failed}`): O app lê esse arquivo a cada 30 s:
 ```bash
 WORKSTACK_INBOX="$HOME/OneDrive - Gantech/workstack-inbox.json" npm start   # ajuste o caminho
 ```
