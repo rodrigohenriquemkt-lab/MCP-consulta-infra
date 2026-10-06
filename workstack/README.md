@@ -57,7 +57,11 @@ Variáveis de ambiente (`WORKSTACK_INBOX`, `WORKSTACK_IGNORE`, `WORKSTACK_WATCH=
 E-mail e reunião com o mesmo assunto (ignorando `RE:`, `RES:`, `ENC:`, `FW:`, `Convite:`, `Atualizado:`, `Aceito:`… e um sufixo ` @ data`) viram **uma nota só**: a mais antiga mantém posição e cor, vira "reunião" se vier do calendário, e as duas origens ficam vinculadas (reenvios da coleta não recriam a nota). Chats e WhatsApp nunca se misturam. Notas abertas por você não são concluídas automaticamente pela coleta.
 
 ### Coleta automática (OneDrive)
-Uma tarefa agendada no Claude (prompt em `collector/PROMPT.md`) lê Outlook, Teams e calendário, roda `bin/build-inbox.js` e grava `workstack-inbox.json` no OneDrive. O app lê esse arquivo a cada 30 s:
+Uma tarefa agendada lê Outlook, Teams, calendário e WhatsApp, roda `bin/build-inbox.js` e grava `workstack-inbox.json`. Há duas versões do prompt:
+- `collector/PROMPT_COWORK.md` — **recomendada**: roda no Cowork (desktop) e grava direto na pasta local do OneDrive, sem permissão de upload.
+- `collector/PROMPT.md` — roda na nuvem e envia o arquivo pelo conector Microsoft 365; **só funciona se o conector tiver permissão de escrita em arquivos** (`Files.ReadWrite`); com a permissão atual de leitura, o upload falha com erro 403.
+
+O app lê o arquivo a cada 30 s: O app lê esse arquivo a cada 30 s:
 ```bash
 WORKSTACK_INBOX="$HOME/OneDrive - Gantech/workstack-inbox.json" npm start   # ajuste o caminho
 ```
