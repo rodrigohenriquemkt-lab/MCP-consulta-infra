@@ -9,11 +9,26 @@ const settings = require('./settings');
 const { buildInbox } = require('./connectors/build');
 
 const INGEST_PORT = Number(process.env.WORKSTACK_PORT || 47800);
-let win, store, file, cfgFile, cfg, lastInbox = 0, watcher = null;
+let win, store, file, cfgFile, cfg, lastInbox = 0, lastRelay = null, watcher = null;
 
 const load = () => { try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return []; } };
 const save = () => fs.writeFileSync(file, JSON.stringify(store.snapshot(), null, 2));
 const push = () => win && win.webContents.send('items', store.list());
+
+// Ponte na nuvem: busca a coleta mais recente (HTTPS + token) e sincroniza. Só reprocessa se for nova.
+async function pollRelay() {
+  const url = cfg.relayUrl && settings.relayEndpoint(cfg.relayUrl);
+  if (!url || !cfg.relayToken) return;
+  try {
+    const res = await fetch(url, { headers: { authorization: `Bearer ${cfg.relayToken}` }, signal: AbortSignal.timeout(10000) });
+    if (res.status !== 200) return; // 204 = sem coleta; 404 = token/URL errados
+    const data = await res.json();
+    if (data.receivedAt === lastRelay) return;
+    const snap = buildInbox(data, { me: cfg.me });
+    store.sync(snap.items, snap.okKinds);
+    lastRelay = data.receivedAt; save(); push();
+  } catch { /* sem rede ou ponte fora do ar: tenta no próximo ciclo */ }
+}
 
 // Item aberto pelo usuário no Outlook/Teams (via observador de janela) entra na pilha;
 // se já existia, não muda de posição; se estava concluído, volta a ficar em andamento.
@@ -110,6 +125,8 @@ app.whenReady().then(() => {
   if (cfg.watch) setWatch(true);
   applyAutostart(cfg.autostart);
   setInterval(pollInbox, 30000);
+  pollRelay();
+  setInterval(pollRelay, 30000);
 
   ipcMain.handle('list', () => store.list());
   ipcMain.handle('add', (_e, t) => { store.upsert({ title: t }); save(); push(); });

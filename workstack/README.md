@@ -56,6 +56,13 @@ Variáveis de ambiente (`WORKSTACK_INBOX`, `WORKSTACK_IGNORE`, `WORKSTACK_WATCH=
 ### Duplicatas
 E-mail e reunião com o mesmo assunto (ignorando `RE:`, `RES:`, `ENC:`, `FW:`, `Convite:`, `Atualizado:`, `Aceito:`… e um sufixo ` @ data`) viram **uma nota só**: a mais antiga mantém posição e cor, vira "reunião" se vier do calendário, e as duas origens ficam vinculadas (reenvios da coleta não recriam a nota). Chats e WhatsApp nunca se misturam. Notas abertas por você não são concluídas automaticamente pela coleta.
 
+### Ponte na nuvem (quando a coleta roda na nuvem)
+A tarefa agendada na nuvem não grava no seu computador. Ela envia a coleta a um pequeno serviço (`../workstack-relay`, em memória) por um conector MCP, e o app busca nele:
+```powershell
+node bin/config.js relay https://SEU-SERVICO.up.railway.app SEU_TOKEN
+```
+O app só aceita HTTPS e não imprime o token inteiro. Para desligar: `node bin/config.js relay off`. O token fica em `settings.json` (pasta do seu usuário).
+
 ### Coleta automática (OneDrive)
 Uma tarefa agendada lê Outlook, Teams, calendário e WhatsApp, roda `bin/build-inbox.js` e grava `workstack-inbox.json`. Há duas versões do prompt:
 - `collector/PROMPT_COWORK.md` — **recomendada**: roda como **rotina local do Claude Code Desktop** (aba Code → Routines → New routine → Local), com a pasta do OneDrive como pasta de trabalho, e grava a coleta crua direto nela; o app normaliza. Só dispara com o app aberto e o computador ligado. (Tarefas agendadas do *Cowork* rodam na nuvem e não enxergam pastas locais: não servem para isto.)

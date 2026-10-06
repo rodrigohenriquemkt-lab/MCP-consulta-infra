@@ -21,3 +21,11 @@ test('caminho das configurações no Windows', () => {
   assert.strictEqual(st.settingsPath('win32', { APPDATA: 'C:\\Users\\R\\AppData\\Roaming' }).replace(/\\/g, '/'),
     'C:/Users/R/AppData/Roaming/workstack/settings.json');
 });
+
+test('ponte: só HTTPS (ou localhost) e monta o endereço /inbox', () => {
+  assert.strictEqual(st.relayEndpoint('https://x.up.railway.app'), 'https://x.up.railway.app/inbox');
+  assert.strictEqual(st.relayEndpoint('https://x.up.railway.app/'), 'https://x.up.railway.app/inbox');
+  assert.strictEqual(st.relayEndpoint('http://localhost:3000'), 'http://localhost:3000/inbox');
+  assert.strictEqual(st.relayEndpoint('http://x.up.railway.app'), null); // token em texto puro: recusado
+  assert.strictEqual(st.relayEndpoint('lixo'), null);
+});

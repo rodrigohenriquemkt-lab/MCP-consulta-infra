@@ -5,7 +5,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const DEFAULTS = { inbox: null, ignore: [], watch: true, autostart: false, me: null };
+const DEFAULTS = { inbox: null, ignore: [], watch: true, autostart: false, me: null, relayUrl: null, relayToken: null };
 
 // Mesmo local que app.getPath('userData') do Electron para o app "workstack".
 function settingsPath(platform = process.platform, env = process.env) {
@@ -34,7 +34,18 @@ function resolve(file, env = process.env) {
     ignore: env.WORKSTACK_IGNORE ? list(env.WORKSTACK_IGNORE) : s.ignore,
     watch: env.WORKSTACK_WATCH === '0' ? false : s.watch,
     me: env.WORKSTACK_ME || s.me,
+    relayUrl: env.WORKSTACK_RELAY_URL || s.relayUrl,
+    relayToken: env.WORKSTACK_RELAY_TOKEN || s.relayToken,
   };
 }
 
-module.exports = { DEFAULTS, settingsPath, load, save, resolve, list };
+// Só aceita HTTPS (o token viaja no cabeçalho); http apenas para testes em localhost.
+function relayEndpoint(url) {
+  try {
+    const u = new URL(url);
+    if (u.protocol !== 'https:' && !['localhost', '127.0.0.1'].includes(u.hostname)) return null;
+    return u.origin + u.pathname.replace(/\/$/, '') + '/inbox';
+  } catch { return null; }
+}
+
+module.exports = { relayEndpoint, DEFAULTS, settingsPath, load, save, resolve, list };
