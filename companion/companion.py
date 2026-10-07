@@ -74,7 +74,14 @@ def main():
             last_seen = time.time()
         if title and not session:
             # Sessão e janela privada abrem NA HORA; o contexto do cliente chega em segundo plano.
-            r = requests.post(f"{AGENT}/meetings", json={"titulo": title}, headers=HDR, timeout=15).json()
+            try:
+                resp = requests.post(f"{AGENT}/meetings", json={"titulo": title}, headers=HDR, timeout=15)
+                resp.raise_for_status()
+                r = resp.json()
+            except requests.RequestException as e:
+                print(f"Servidor do agente indisponível ({type(e).__name__}). Confira se o 'npm start' está rodando em {AGENT}. Nova tentativa em 10s.")
+                time.sleep(10)
+                continue
             session, stop = r["sessionId"], threading.Event()
             tok = os.environ.get("CONSOLE_TOKEN")
             url = f"{AGENT}{r['console']}" + (f"?token={tok}" if tok else "")
