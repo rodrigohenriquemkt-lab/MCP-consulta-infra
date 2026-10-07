@@ -25,3 +25,9 @@ test("sugere oferta e descarta produto inexistente (sem link inventado)", async 
   assert.ok(sug);
   assert.deepEqual(sug.sugestoes[0].produtos.map((p) => p.id), ["palo-alto"]);
 });
+
+test("expansão de placeholders e domínio do cliente", async () => {
+  const { expand, domainFromParticipants } = await import("../src/context.js");
+  assert.deepEqual(expand({ query: "{dominio}", n: 1 }, { dominio: "acme.com" }), { query: "acme.com", n: 1 });
+  assert.equal(domainFromParticipants(["rodrigo@gantech.com.br", "ana@acme.com.br"]), "acme.com.br");
+});

@@ -8,9 +8,8 @@ export const config = {
   effort: env.COPILOT_EFFORT || "low", // latência em reunião ao vivo
   // Quem é o vendedor (para separar fala do cliente da sua). Nomes separados por vírgula.
   userNames: (env.USER_NAMES || "Rodrigo").split(",").map((s) => s.trim().toLowerCase()),
-  // Proteção do console e dos webhooks.
+  // Proteção do console.
   consoleToken: env.CONSOLE_TOKEN || "",
-  webhookSecret: env.WEBHOOK_SECRET || "",
   // Gatilhos de análise.
   minNewWords: Number(env.MIN_NEW_WORDS || 35),
   debounceMs: Number(env.DEBOUNCE_MS || 4000),
@@ -20,9 +19,10 @@ export const config = {
     env.INFRA_MCP_URL || "https://company-tech-profiler-remote-production.up.railway.app/mcp",
   crmMcpUrl: env.CRM_MCP_URL || "",
   crmMcpToken: env.CRM_MCP_TOKEN || "",
-  // Captura (Recall.ai).
-  recallBase: env.RECALL_BASE_URL || "https://us-east-1.recall.ai",
-  recallToken: env.RECALL_API_KEY || "",
-  publicUrl: env.PUBLIC_URL || "",
+  // Token que o app companheiro (no seu PC) usa para enviar transcrição.
+  ingestToken: env.INGEST_TOKEN || "",
+  // Fontes extras de contexto (WhatsApp, e-mail, Teams, agenda...): arquivo JSON, ver docs.
+  contextSourcesFile: env.CONTEXT_SOURCES_FILE || "",
+  domainsInternal: (env.INTERNAL_DOMAINS || "gantech.com.br").split(",").map((s) => s.trim().toLowerCase()),
   mock: env.BRAIN_MOCK === "1",
 };

@@ -2,8 +2,7 @@ import express from "express";
 import { randomUUID } from "node:crypto";
 import { config } from "./config.js";
 import { MeetingSession } from "./session.js";
-import { buildBriefing } from "./context.js";
-import { joinMeeting, parseRecallEvent } from "./recall.js";
+import { buildBriefing } from "./briefing.js";
 import { consoleHtml } from "./console.js";
 
 const app = express();
@@ -16,34 +15,39 @@ function guard(req, res, next) {
   res.status(401).send("não autorizado");
 }
 
-async function createSession({ clienteNome, dominio, extra }) {
+async function createSession({ titulo, participantes, clienteNome, dominio, extra }) {
   const id = randomUUID();
   const clients = new Set();
   const publish = (ev) => clients.forEach((c) => c.write(`data: ${JSON.stringify(ev)}\n\n`));
-  const briefing = await buildBriefing({ clienteNome, dominio, extra });
+  const briefing = await buildBriefing({ titulo, participantes, clienteNome, dominio, extra });
   const session = new MeetingSession({ id, briefing, publish });
   sessions.set(id, { session, clients });
-  return { id, briefing };
+  return { sessionId: id, briefingChars: briefing.length };
 }
 
-// Início de reunião: cria sessão (briefing) e, se houver link, manda o bot entrar.
-app.post("/meetings", guard, async (req, res) => {
+function ingestGuard(req, res, next) {
+  if (!config.ingestToken || req.get("x-ingest-token") === config.ingestToken) return next();
+  res.status(401).send("não autorizado");
+}
+
+// Início de reunião (chamado pelo app companheiro ao detectar a reunião, ou manualmente).
+// `titulo`/`participantes` ajudam a identificar o cliente; o resto vem das fontes de contexto.
+app.post("/meetings", ingestGuard, async (req, res) => {
   try {
-    const { meetingUrl, clienteNome, dominio, extra } = req.body;
-    const { id, briefing } = await createSession({ clienteNome, dominio, extra });
-    const bot = meetingUrl ? await joinMeeting({ meetingUrl, sessionId: id }) : null;
-    res.json({ sessionId: id, console: `/console/${id}`, briefingChars: briefing.length, bot: bot?.id });
+    const { sessionId, briefingChars } = await createSession(req.body || {});
+    res.json({ sessionId, console: `/console/${sessionId}`, briefingChars });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
-// Webhook de transcrição em tempo real (Recall.ai).
-app.post("/webhooks/recall", (req, res) => {
-  if (config.webhookSecret && req.query.secret !== config.webhookSecret) return res.sendStatus(401);
-  res.sendStatus(200); // responde rápido; processa em seguida
-  const ev = parseRecallEvent(req.body);
-  if (ev) sessions.get(ev.sessionId)?.session.addUtterance(ev.speaker, ev.text);
+// Segmentos de transcrição vindos do app companheiro.
+app.post("/ingest/:id", ingestGuard, (req, res) => {
+  const s = sessions.get(req.params.id);
+  if (!s) return res.sendStatus(404);
+  const { speaker, text } = req.body || {};
+  s.session.addUtterance(speaker, text);
+  res.sendStatus(202);
 });
 
 // Injeção manual de falas (simulação/testes).

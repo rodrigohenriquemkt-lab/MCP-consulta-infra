@@ -1,63 +1,65 @@
-# Copiloto de reuniões Gantech — arquitetura e roadmap
+# Copiloto de reuniões Gantech — arquitetura v2 (sem serviços de captura de terceiros)
 
-## Fluxo
+## Princípio
+Nenhum bot entra na reunião e nenhum áudio vai para terceiros. Um app companheiro no PC do Rodrigo
+captura e transcreve localmente; só **texto** sobe para o agente. O agente raciocina com o portfólio
+Gantech + contexto do cliente (CRM, e-mail, Teams, WhatsApp) e devolve a fala consultiva.
 
 ```
-Teams / Zoom / Meet
-   │  (bot participante — Recall.ai)
-   ▼  transcrição em tempo real (webhook)
-POST /webhooks/recall ──► MeetingSession ──► gatilho (palavras/pergunta/debounce/cooldown)
-                                                │
-   Briefing pré-reunião (CRM + infra + extras) ─┤  (cacheado no prompt)
-   Catálogo do portfólio (data/portfolio.json) ─┤
-                                                ▼
-                                   Claude (brain.js) ── ferramentas sob demanda:
-                                        • analisar_infra_cliente → MCP de infra (este repo)
-                                        • buscar_crm             → MCP do CRM Gantech
-                                                │ JSON estruturado
-                                                ▼
-                     servidor anexa links REAIS do catálogo ──► SSE ──► /console/:id
-                                                                       (painel privado)
+PC do Rodrigo (Windows)                               Servidor do agente (Node)
+┌──────────────────────────────┐                      ┌───────────────────────────────────────┐
+│ companion/companion.py       │   POST /meetings     │ briefing.js                           │
+│  • detecta Teams/Zoom/Meet   │ ───────────────────► │  fontes MCP (CRM, e-mail, Teams,      │
+│  • mic  → "Rodrigo"          │                      │  WhatsApp, agenda) + infra pública    │
+│  • áudio do sistema→"Cliente"│   POST /ingest/:id   │  → Claude resume em briefing          │
+│  • VAD + Whisper LOCAL       │ ───────────────────► │ session.js: gatilhos (palavras/       │
+│  • abre o console            │   (só texto)         │  pergunta/debounce/cooldown)          │
+└──────────────────────────────┘                      │ brain.js: Claude + catálogo + tools   │
+                                                      │  (analisar_infra_cliente, buscar_crm) │
+Console privado /console/:id  ◄──── SSE ───────────── │ links só do catálogo (anti-alucinação)│
+(2º monitor ou celular)                               └───────────────────────────────────────┘
 ```
 
-## Como cada requisito é atendido
-
-| Requisito | Implementação | Estado |
+## Decisões de arquitetura
+| Tema | Decisão | Por quê |
 |---|---|---|
-| Transcrição em tempo real (Teams/Zoom/Meet) | Recall.ai (`src/recall.js`) | Escrito, **não testado** contra a API real |
-| Início automático | Integração de calendário do Recall (auto-join) ou `POST /meetings` disparado por rotina que lê a agenda do Outlook | Fase 2 |
-| Contexto CRM / e-mail / Teams | `src/context.js`: CRM e infra prontos; e-mail/Teams entram via `extra` (fase 2: busca no M365 por domínio do cliente) | CRM + infra: pronto |
-| Ofertas aderentes | Catálogo `data/portfolio.json` (nível fabricante); modelo escolhe por `id` | **Catálogo v1: 11 fabricantes informados por Rodrigo; revisar temas e trocar links por páginas de produto** |
-| Links para compartilhar | Só do catálogo; ids/URLs inventados são descartados (testado) | Pronto |
-| Fala consultiva | `fala_sugerida` (1ª pessoa, risco/NIST/valor) no schema | Pronto |
-| Perguntas ao cliente | `tipo: "pergunta"` + `perguntas_discovery` do catálogo | Pronto |
-| Ignorar pessoal/irrelevante | `relevante=false` + regra no prompt (testado com mock) | Pronto; ajustar com reuniões reais |
-| Integra consulta de infra | Ferramenta `analisar_infra_cliente` → `analyze_company` | Pronto |
-| Objetivo e preciso | Schema curto, 0–2 sugestões/rodada, dedupe (`JA_SUGERIDO`) | Pronto |
+| Captura | App local, áudio do mic + loopback do sistema | Independe do app de reunião; sem bot visível; sem custo por hora |
+| Quem fala | Mic = Rodrigo, sistema = Cliente | Separa vendedor/cliente sem diarização (exige fone de ouvido) |
+| Transcrição | faster-whisper local (modelo `small`/`medium`) | Áudio nunca sai do PC; custo zero; trade-off: latência/qualidade dependem da CPU/GPU |
+| Início automático | Companheiro detecta a reunião (janela/processo) e chama `POST /meetings` | Roda sozinho ao abrir a reunião |
+| Contexto | Fontes MCP configuráveis (`CONTEXT_SOURCES_FILE`) → resumo pelo Claude | WhatsApp/e-mail/Teams são ruidosos e pessoais; o resumo filtra e estrutura |
+| Cérebro | Claude com catálogo (11 fabricantes) + ferramentas de infra/CRM | Portfólio no prompt (cache); ferramentas só quando mudam a recomendação |
+| Links | Só do catálogo | Nunca inventa URL |
 
-## Decisões que dependem de você
+## Requisitos dependentes de você (bloqueantes para contexto real)
+1. **Acesso programático às fontes.** Os conectores do Claude.ai (CRM, Microsoft 365, WhatsApp) são
+   da sua conta no Claude e **não são acessíveis a um servidor próprio**. Opções por fonte:
+   - Se você já expõe esses MCPs com URL e token (ex.: o do CRM, o do WhatsApp), basta preencher `docs/context-sources.exemplo.json`.
+   - Microsoft 365 (e-mail, Teams, transcrições, agenda): registrar um app no Entra ID com permissões
+     Graph de leitura delegadas (Mail.Read, Chat.Read, OnlineMeetingTranscript.Read.All, Calendars.Read) e expô-lo como MCP/endpoint.
+     Transcrições do Teams só existem se a transcrição estiver habilitada nas reuniões (política do tenant).
+   - WhatsApp: depende de como o seu MCP atual obtém as mensagens (hoje não sei; informe a URL/forma de acesso).
+2. **LGPD/consentimento:** transcrever fala de terceiros e usar WhatsApp/e-mail como contexto exige base legal,
+   aviso aos participantes e política de retenção. Hoje **nada é gravado em disco** (transcrição fica em memória da sessão).
+3. **Sistema operacional:** o companheiro assume **Windows** (WASAPI loopback). Mac exigiria outra rota de captura.
 
-1. **Captura**: bot visível (Recall.ai, serviço pago por hora de reunião; todos veem um participante) vs. app desktop capturando áudio do sistema (invisível, mas bem mais trabalho e um app por SO). Este código assume o bot.
-2. **Consentimento/LGPD**: transcrever reunião exige avisar os participantes e alinhar com Jurídico/DPO; defina retenção (hoje nada é persistido).
-3. **Modelo**: padrão `claude-opus-5-5`, esforço `low`. Se a latência incomodar, `COPILOT_MODEL=claude-sonnet-5-5`.
-4. **Acesso ao CRM/M365 de fora do Claude.ai**: os conectores do Claude.ai não são reutilizáveis aqui; é preciso a URL e um token do MCP do CRM (`CRM_MCP_URL`, `CRM_MCP_TOKEN`) e, na fase 2, credenciais Microsoft Graph.
+## Estado atual
+| Peça | Estado |
+|---|---|
+| Servidor, sessões, gatilhos, cérebro, console, catálogo, links | Pronto; testado em modo simulado (`BRAIN_MOCK=1`) |
+| Briefing com fontes MCP + resumo | Escrito; **não testado** com fontes reais |
+| Companheiro (detecção, captura, Whisper) | Escrito; **não testado** (sem áudio/Windows no ambiente de desenvolvimento) |
+| Claude real (prompts, qualidade das sugestões) | **Não testado** (sem chave no ambiente) |
 
 ## Rodar
-
-```bash
-cd copilot && npm install
-BRAIN_MOCK=1 npm start      # sem chave; valida o fluxo
-npm run sim                 # em outro terminal, reproduz sim/reuniao-exemplo.jsonl
-export ANTHROPIC_API_KEY=... # modo real
-```
-
-Variáveis: ver `src/config.js` (`CONSOLE_TOKEN`, `WEBHOOK_SECRET`, `RECALL_API_KEY`, `PUBLIC_URL`, `USER_NAMES`, ...).
-**Segurança**: defina `CONSOLE_TOKEN` e `WEBHOOK_SECRET` antes de expor publicamente.
+Servidor: `cd copilot && npm install && npm start` (`BRAIN_MOCK=1` para testar sem chave; `npm run sim` reproduz uma reunião).
+Companheiro (Windows): `pip install -r companion/requirements.txt` e `python companion/companion.py`,
+com `COPILOT_URL`, `INGEST_TOKEN`, `CONSOLE_TOKEN` e `USER_LABEL` (seu nome, como quer aparecer).
+Defina `INGEST_TOKEN` e `CONSOLE_TOKEN` antes de expor o servidor fora da sua máquina.
 
 ## Roadmap
-
-1. Preencher catálogo real (dá para gerar a partir do `search_products` do CRM).
-2. Teste real com Recall em reunião interna; validar formato do webhook e identificação do falante.
-3. Auto-join via agenda + briefing automático (e-mails/Teams recentes do cliente).
-4. Pós-reunião: ata, próximos passos e nota no CRM (`create_customer_note`, com confirmação).
-5. Avaliação com reuniões gravadas: taxa de sugestões úteis vs. ruído, ajuste dos gatilhos.
+1. Teste local ponta a ponta: companheiro + servidor na mesma máquina, reunião interna, sem fontes de contexto.
+2. Ligar CRM e depois M365/WhatsApp no `context-sources.json`; avaliar a qualidade do briefing.
+3. Identificar o cliente pela agenda (Outlook) em vez do título da janela.
+4. Pós-reunião: ata, próximos passos, nota no CRM (com sua confirmação).
+5. Avaliar com reuniões gravadas: sugestões úteis x ruído; ajustar gatilhos e prompts.

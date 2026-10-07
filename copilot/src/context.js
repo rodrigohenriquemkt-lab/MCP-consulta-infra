@@ -1,33 +1,54 @@
+import { readFileSync } from "node:fs";
 import { config } from "./config.js";
 import { callMcpTool } from "./mcp.js";
 
-const clip = (s, n) => (s.length > n ? s.slice(0, n) + "…[truncado]" : s);
+export const clip = (s, n) => (s.length > n ? s.slice(0, n) + "…[truncado]" : s);
 
-// Briefing pré-reunião: roda UMA vez no início e fica em cache no prompt.
-// Fontes: CRM (cliente + notas), infraestrutura pública (MCP de infra).
-// E-mail/Teams: ver docs/ARQUITETURA.md (fase 2); aceitos aqui via `extra`.
-export async function buildBriefing({ clienteNome, dominio, extra = "" }) {
-  const partes = [];
-  const jobs = [];
+// Fontes de contexto configuráveis (arquivo JSON em CONTEXT_SOURCES_FILE). Cada fonte é um
+// servidor MCP (WhatsApp, e-mail/Teams/agenda do Microsoft 365, CRM...) com as chamadas
+// de leitura a fazer. Placeholders: {cliente}, {dominio}, {titulo}.
+// Exemplo em docs/context-sources.exemplo.json. Somente leitura.
+export function loadSources() {
+  if (!config.contextSourcesFile) return [];
+  return JSON.parse(readFileSync(config.contextSourcesFile, "utf8"));
+}
 
-  if (config.crmMcpUrl && clienteNome) {
-    const crm = { url: config.crmMcpUrl, token: config.crmMcpToken };
-    jobs.push(
-      callMcpTool(crm, "search", { query: clienteNome })
-        .then((t) => partes.push(`## CRM: busca por "${clienteNome}"\n${clip(t, 4000)}`))
-        .catch((e) => partes.push(`## CRM: indisponível (${e.message})`))
-    );
+export const expand = (v, vars) =>
+  typeof v === "string"
+    ? v.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? "")
+    : Array.isArray(v) ? v.map((x) => expand(x, vars))
+    : v && typeof v === "object" ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, expand(x, vars)]))
+    : v;
+
+// Deduz o domínio do cliente pelos e-mails dos participantes (ignora domínios internos).
+export function domainFromParticipants(participantes = []) {
+  for (const p of participantes) {
+    const d = String(p).split("@")[1]?.toLowerCase();
+    if (d && !config.domainsInternal.includes(d)) return d;
   }
-  if (dominio) {
+  return "";
+}
+
+// Coleta bruta, em paralelo; uma fonte fora do ar não derruba as demais.
+export async function gatherRaw({ clienteNome, dominio, titulo }) {
+  const vars = { cliente: clienteNome || "", dominio: dominio || "", titulo: titulo || "" };
+  const jobs = [];
+  for (const src of loadSources()) {
+    for (const c of src.chamadas || []) {
+      jobs.push(
+        callMcpTool({ url: src.url, token: src.token }, c.tool, expand(c.args || {}, vars))
+          .then((t) => `## ${src.nome} / ${c.tool}\n${clip(t, src.maxChars || 6000)}`)
+          .catch((e) => `## ${src.nome} / ${c.tool}: indisponível (${e.message})`)
+      );
+    }
+  }
+  if (dominio)
     jobs.push(
       callMcpTool({ url: config.infraMcpUrl }, "analyze_company", { domain: dominio })
-        .then((t) => partes.push(`## Infraestrutura pública de ${dominio}\n${clip(t, 6000)}`))
-        .catch((e) => partes.push(`## Infra: indisponível (${e.message})`))
+        .then((t) => `## Infraestrutura pública de ${dominio}\n${clip(t, 6000)}`)
+        .catch((e) => `## Infra: indisponível (${e.message})`)
     );
-  }
-  await Promise.all(jobs);
-  if (extra) partes.push(`## Contexto adicional\n${clip(extra, 4000)}`);
-  return partes.join("\n\n") || "Sem contexto prévio disponível.";
+  return (await Promise.all(jobs)).join("\n\n");
 }
 
 // Ferramentas que o agente pode acionar DURANTE a reunião (sob demanda).

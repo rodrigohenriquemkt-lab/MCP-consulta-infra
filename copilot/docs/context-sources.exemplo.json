@@ -1,0 +1,34 @@
+[
+  {
+    "nome": "CRM",
+    "url": "https://SEU-MCP-DO-CRM/mcp",
+    "token": "PREENCHER",
+    "chamadas": [
+      { "tool": "search", "args": { "query": "{cliente}" } }
+    ]
+  },
+  {
+    "nome": "E-mail (Outlook)",
+    "url": "https://SEU-MCP-M365/mcp",
+    "token": "PREENCHER",
+    "chamadas": [
+      { "tool": "outlook_email_search", "args": { "query": "{dominio}" } }
+    ]
+  },
+  {
+    "nome": "Teams (chats e transcrições)",
+    "url": "https://SEU-MCP-M365/mcp",
+    "token": "PREENCHER",
+    "chamadas": [
+      { "tool": "chat_message_search", "args": { "query": "{cliente}" } }
+    ]
+  },
+  {
+    "nome": "WhatsApp",
+    "url": "https://SEU-MCP-WHATSAPP/mcp",
+    "token": "PREENCHER",
+    "chamadas": [
+      { "tool": "search_contacts", "args": { "query": "{cliente}" } }
+    ]
+  }
+]
