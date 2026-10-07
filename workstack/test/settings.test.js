@@ -8,7 +8,7 @@ const st = require('../settings');
 
 test('padrões, persistência e precedência do ambiente', () => {
   const f = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'ws-')), 'sub', 'settings.json');
-  assert.deepStrictEqual(st.load(f), st.DEFAULTS); // arquivo ausente
+  assert.deepStrictEqual(st.load(f), { ...st.DEFAULTS, version: 2 }); // arquivo ausente
   st.save(f, { ...st.DEFAULTS, inbox: 'C:/a.json', autostart: true, ignore: ['Clientes'] });
   const r = st.resolve(f, {});
   assert.strictEqual(r.inbox, 'C:/a.json');
@@ -34,4 +34,14 @@ test('início automático: ligado por padrão e atalho na pasta de Inicializaç�
   assert.strictEqual(st.DEFAULTS.autostart, true);
   assert.strictEqual(st.startupShortcutPath('C:\\Users\\R\\AppData\\Roaming').replace(/\\/g, '/'),
     'C:/Users/R/AppData/Roaming/Microsoft/Windows/Start Menu/Programs/Startup/Workstack.lnk');
+});
+
+test('migração: autostart:false salvo pelo padrão antigo é descartado; escolha da v2 é respeitada', () => {
+  const f = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'ws-')), 'settings.json');
+  fs.writeFileSync(f, JSON.stringify({ watch: true, autostart: false, inbox: 'C:/a.json' })); // sem version
+  const migrated = st.load(f);
+  assert.strictEqual(migrated.autostart, true);
+  assert.strictEqual(migrated.inbox, 'C:/a.json'); // demais valores preservados
+  st.save(f, { ...migrated, autostart: false }); // usuário desliga de propósito (v2)
+  assert.strictEqual(st.load(f).autostart, false);
 });

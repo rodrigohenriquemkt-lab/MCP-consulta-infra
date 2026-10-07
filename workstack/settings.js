@@ -5,6 +5,9 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
+// Versão do arquivo: configurações gravadas antes da v2 guardavam `autostart: false` (o padrão antigo)
+// sem que o usuário tivesse escolhido; na migração esse valor é descartado e vale o padrão novo (ligado).
+const VERSION = 2;
 const DEFAULTS = { inbox: null, ignore: [], watch: true, autostart: true, me: null, relayUrl: null, relayToken: null };
 
 // Mesmo local que app.getPath('userData') do Electron para o app "workstack".
@@ -16,7 +19,11 @@ function settingsPath(platform = process.platform, env = process.env) {
 }
 
 function load(file) {
-  try { return { ...DEFAULTS, ...JSON.parse(fs.readFileSync(file, 'utf8')) }; } catch { return { ...DEFAULTS }; }
+  try {
+    const saved = JSON.parse(fs.readFileSync(file, 'utf8'));
+    if (saved.version !== VERSION) delete saved.autostart;
+    return { ...DEFAULTS, ...saved, version: VERSION };
+  } catch { return { ...DEFAULTS, version: VERSION }; }
 }
 
 function save(file, s) {
