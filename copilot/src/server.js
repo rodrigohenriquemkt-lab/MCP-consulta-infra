@@ -4,6 +4,7 @@ import { config } from "./config.js";
 import { MeetingSession } from "./session.js";
 import { buildBriefing } from "./briefing.js";
 import { ask } from "./brain.js";
+import { saveBriefing, findBriefing } from "./briefings.js";
 import { consoleHtml } from "./console.js";
 
 const app = express();
@@ -29,7 +30,9 @@ function createSession({ titulo, participantes, clienteNome, dominio, extra }) {
   const session = new MeetingSession({ id, briefing: "Contexto ainda carregando; use apenas a conversa até chegar.", publish });
   sessions.set(id, { session, clients, history });
   publish({ type: "status", text: `Reunião iniciada${titulo ? `: ${titulo}` : ""}. Estou ouvindo. Carregando o contexto do cliente...` });
-  buildBriefing({ titulo, participantes, clienteNome, dominio, extra })
+  const pre = findBriefing({ titulo, clienteNome, dominio });
+  if (pre) publish({ type: "status", text: `Briefing da sua rotina encontrado para "${pre.cliente || pre.dominio}".` });
+  buildBriefing({ titulo, participantes, clienteNome, dominio, extra: [extra, pre?.texto].filter(Boolean).join("\n\n") })
     .then((b) => {
       session.briefing = b;
       publish({ type: "briefing", text: b });
@@ -51,6 +54,16 @@ app.post("/meetings", ingestGuard, (req, res) => {
     res.json({ sessionId, console: `/console/${sessionId}` });
   } catch (e) {
     res.status(500).json({ error: e.message });
+  }
+});
+
+// A rotina de preparação de briefing do Rodrigo empurra o briefing aqui; casa com a reunião por cliente/domínio.
+app.post("/briefings", ingestGuard, (req, res) => {
+  try {
+    const b = saveBriefing(req.body || {});
+    res.status(201).json({ cliente: b.cliente, dominio: b.dominio });
+  } catch (e) {
+    res.status(400).json({ error: e.message });
   }
 });
 

@@ -31,3 +31,12 @@ test("expansão de placeholders e domínio do cliente", async () => {
   assert.deepEqual(expand({ query: "{dominio}", n: 1 }, { dominio: "acme.com" }), { query: "acme.com", n: 1 });
   assert.equal(domainFromParticipants(["rodrigo@gantech.com.br", "ana@acme.com.br"]), "acme.com.br");
 });
+
+test("briefing empurrado casa por nome do cliente no título ou por domínio", async () => {
+  const { saveBriefing, findBriefing } = await import("../src/briefings.js");
+  saveBriefing({ cliente: "Acme Ltda", dominio: "acme.com.br", texto: "Cliente quer SOC." });
+  assert.equal(findBriefing({ titulo: "Reunião Acme Ltda | Microsoft Teams" })?.texto, "Cliente quer SOC.");
+  assert.equal(findBriefing({ titulo: "Outra", dominio: "ACME.com.br" })?.texto, "Cliente quer SOC.");
+  assert.equal(findBriefing({ titulo: "Reunião Beta" }), null);
+  assert.throws(() => saveBriefing({ texto: "sem cliente" }));
+});

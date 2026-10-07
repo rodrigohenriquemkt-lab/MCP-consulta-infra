@@ -1,9 +1,9 @@
-# Copiloto de reuniões Gantech — arquitetura v3
+# Copiloto de reuniões Gantech — arquitetura v4 (legendas ao vivo)
 
 ## Princípio
 Nenhum bot entra na reunião. Um app companheiro no PC do Rodrigo detecta a reunião, **abre a janela
-privada na hora** e entrega ao agente o texto da conversa (vindo do áudio capturado ou da transcrição
-ao vivo). O agente raciocina com o portfólio Gantech + contexto do cliente (CRM, e-mail, Teams,
+privada na hora** e entrega ao agente o texto das **legendas ao vivo do próprio Teams/Zoom/Meet**
+(sem áudio, sem motor de transcrição). O agente raciocina com o portfólio Gantech + contexto do cliente (CRM, e-mail, Teams,
 WhatsApp, e o briefing da rotina que você já tem) e dialoga com você: sugere sem ser chamado e responde
 quando você pergunta. **Não lê calendário**: isso é da sua rotina de briefing existente.
 
@@ -27,49 +27,46 @@ Console privado /console/:id ◄──── SSE ──────────�
 | Tema | Decisão | Por quê |
 |---|---|---|
 | Captura | App local, áudio do mic + loopback do sistema | Independe do app de reunião; sem bot visível |
-| Quem fala | Mic = Rodrigo, sistema = Cliente | Separa vendedor/cliente sem diarização (exige fone de ouvido) |
-| Transcrição | **Pendente de decisão** (`companion/stt.py` define o contrato). Whisper removido | Ver opções no fim |
-| Texto ao vivo | `POST /ingest/:id` aceita texto de qualquer origem | Permite usar legendas/transcrição do próprio app |
+| Texto da reunião | **Legendas ao vivo do próprio app** (`companion/captions.py`) | Sem áudio, sem motor de STT, sem custo; exige legendas LIGADAS na reunião |
+| Quem fala | O nome do falante vem da legenda; `USER_NAMES` identifica o Rodrigo | Sem diarização própria |
+| Leitor de legendas | Calibrado com `companion/probe.py` numa reunião real | Não adivinhamos elementos de interface; a lógica de estabilização já é testada |
 | Início | Companheiro detecta a reunião → sessão e console abrem na hora | Diálogo começa com a reunião; o contexto não bloqueia |
 | Diálogo | Sugestões espontâneas + caixa de pergunta no console | Mão dupla |
-| Contexto | Fontes MCP (`CONTEXT_SOURCES_FILE`) → resumo pelo Claude; briefing da sua rotina entra por `extra` | Filtra o ruído pessoal de WhatsApp/e-mail |
+| Contexto | (1) briefing da sua rotina via `POST /briefings`; (2) fontes MCP próprias (`CONTEXT_SOURCES_FILE`): WhatsApp (Railway), CRM; tudo resumido pelo Claude | Reaproveita o que já funciona; filtra ruído pessoal |
 | Calendário | **Fora do escopo do agente** | Já existe rotina própria de briefing |
 | Links | Só do catálogo | Nunca inventa URL |
 
-## Requisitos dependentes de você (bloqueantes para contexto real)
-1. **Acesso programático às fontes.** Os conectores do Claude.ai (CRM, Microsoft 365, WhatsApp) são
-   da sua conta no Claude e **não são acessíveis a um servidor próprio**. Opções por fonte:
-   - Se você já expõe esses MCPs com URL e token (ex.: o do CRM, o do WhatsApp), basta preencher `docs/context-sources.exemplo.json`.
-   - Microsoft 365 (e-mail, Teams, transcrições): registrar um app no Entra ID com permissões
-     Graph de leitura delegadas (Mail.Read, Chat.Read, OnlineMeetingTranscript.Read.All) e expô-lo como MCP/endpoint.
-     Transcrições do Teams só existem se a transcrição estiver habilitada nas reuniões (política do tenant).
-   - WhatsApp: depende de como o seu MCP atual obtém as mensagens (hoje não sei; informe a URL/forma de acesso).
-2. **LGPD/consentimento:** transcrever fala de terceiros e usar WhatsApp/e-mail como contexto exige base legal,
-   aviso aos participantes e política de retenção. Hoje **nada é gravado em disco** (transcrição fica em memória da sessão).
-3. **Sistema operacional:** o companheiro assume **Windows** (WASAPI loopback). Mac exigiria outra rota de captura.
+## Acesso às fontes de contexto
+- **WhatsApp:** MCP já publicado no Railway (`whatsappgantechmcp-production.up.railway.app`); falta confirmar o caminho (`/mcp`) e se exige token.
+- **E-mail e Teams (Microsoft 365):** as permissões que você concedeu pertencem ao conector do Claude.ai e **não podem ser
+  reutilizadas por um servidor próprio**. Por isso o agente **não lê o M365 diretamente**: e-mail e transcrições de reuniões
+  passadas entram pelo briefing que a sua rotina já prepara, enviado a `POST /briefings`. Entra ID só seria necessário se
+  um dia o agente precisasse consultar e-mail/Teams por conta própria, durante a reunião.
+- **CRM:** mesma lógica; se o MCP do CRM (Railway) tiver URL/token, preencher no arquivo de fontes.
+- **LGPD/consentimento:** usar WhatsApp, e-mail e legendas de terceiros exige base legal, aviso aos participantes e política de
+  retenção. Hoje **nada é gravado em disco**.
+- **Sistema operacional:** Windows (confirmado).
 
 ## Estado atual
 | Peça | Estado |
 |---|---|
 | Servidor, sessões, gatilhos, cérebro, console, catálogo, links | Pronto; testado em modo simulado (`BRAIN_MOCK=1`) |
 | Briefing com fontes MCP + resumo | Escrito; **não testado** com fontes reais |
-| Companheiro (detecção, janela privada, captura) | Escrito; **não testado** (sem áudio/Windows no ambiente de desenvolvimento) |
-| Motor de transcrição | **Não existe** — aguardando escolha; sem ele o companheiro roda em modo texto |
+| Companheiro (detecção, janela privada) | Escrito; **não testado** (sem Windows no ambiente de desenvolvimento) |
+| Estabilização das legendas (`CaptionStream`) | Pronto e testado (4 testes) |
+| Leitor de legendas por app (Teams/Zoom/Meet) | **Não existe**: depende de calibração com `probe.py` |
+| Briefing empurrado (`/briefings`) | Pronto; testado |
 | Claude real (prompts, qualidade das sugestões) | **Não testado** (sem chave no ambiente) |
 
 ## Rodar
 Servidor: `cd copilot && npm install && npm start` (`BRAIN_MOCK=1` para testar sem chave; `npm run sim` reproduz uma reunião).
 Companheiro (Windows): `pip install -r companion/requirements.txt` e `python companion/companion.py`,
-com `COPILOT_URL`, `INGEST_TOKEN`, `CONSOLE_TOKEN`, `USER_LABEL` e (quando existir) `STT_ENGINE`.
+com `COPILOT_URL`, `INGEST_TOKEN`, `CONSOLE_TOKEN` e (após calibrar) `CAPTIONS_READER`.
+Calibração: `python companion/probe.py "Microsoft Teams"` numa reunião com legendas ligadas.
 Defina `INGEST_TOKEN` e `CONSOLE_TOKEN` antes de expor o servidor fora da sua máquina.
 
 ## Roadmap
-1. Teste local ponta a ponta: companheiro + servidor na mesma máquina, reunião interna, sem fontes de contexto.
-2. Ligar CRM e depois M365/WhatsApp no `context-sources.json`; avaliar a qualidade do briefing.
+1. Calibrar: rodar `probe.py` em reuniões internas (Teams, Zoom, Meet) e escrever os leitores com os elementos reais.
+2. Teste ponta a ponta local; depois ligar WhatsApp e CRM no `context-sources.json` e a rotina de briefing em `/briefings`.
 3. Pós-reunião: ata, próximos passos, nota no CRM (com sua confirmação).
 4. Avaliar com reuniões gravadas: sugestões úteis x ruído; ajustar gatilhos e prompts.
-
-## Motor de transcrição: opções (decisão pendente)
-- **Azure AI Speech (streaming, pt-BR):** latência baixa, combina com ambiente Microsoft; o áudio vai para a nuvem da Microsoft.
-- **Legendas/transcrição ao vivo do próprio app (Teams/Zoom/Meet):** nenhum áudio sai do PC e não há motor extra; depende de a transcrição estar ligada na reunião e de uma forma de ler o texto (cada app é diferente).
-- **Outro STT em nuvem (Google, Deepgram etc.):** equivalente ao Azure, outro fornecedor.
