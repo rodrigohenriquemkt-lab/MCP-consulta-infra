@@ -57,7 +57,7 @@ function applyAutostart(on) {
     } else {
       fs.rmSync(link, { force: true });
     }
-  } catch { /* sem permissão ou pasta indisponível: o 🚀 continua refletindo a preferência */ }
+  } catch (e) { console.error('Início automático: não foi possível atualizar o atalho:', e.message); }
 }
 const persist = (patch) => { cfg = { ...cfg, ...patch }; const s = settings.load(cfgFile); settings.save(cfgFile, { ...s, ...patch }); };
 
