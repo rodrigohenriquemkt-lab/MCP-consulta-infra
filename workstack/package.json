@@ -5,7 +5,8 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "test": "node --test"
+    "test": "node --test",
+    "instalar-windows": "powershell -NoProfile -ExecutionPolicy Bypass -File install-windows.ps1"
   },
   "devDependencies": {
     "electron": "^33.0.0"

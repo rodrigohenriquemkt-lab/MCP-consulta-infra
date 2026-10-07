@@ -37,11 +37,28 @@ function onOpened(p) {
   if (it.done) store.setDone(it.id, false);
   save(); push();
 }
-// Início automático: registra o app para abrir ao entrar no Windows. Em desenvolvimento
-// (npm start) registra o electron.exe apontando para a pasta do app; empacotado, o próprio .exe.
-const applyAutostart = (on) => app.setLoginItemSettings({
-  openAtLogin: !!on, path: process.execPath, args: app.isPackaged ? [] : [app.getAppPath()],
-});
+// Início automático (Windows): atalho "Workstack.lnk" na pasta de Inicialização (shell:startup),
+// visível e removível pelo usuário. Em desenvolvimento (npm start) aponta para o electron.exe com a
+// pasta do app; empacotado, para o próprio .exe. É refeito a cada abertura (se a pasta do app mudar de
+// lugar, basta abrir uma vez). Também remove a entrada antiga do registro (versões anteriores).
+function applyAutostart(on) {
+  const args = app.isPackaged ? [] : [app.getAppPath()];
+  app.setLoginItemSettings({ openAtLogin: false, path: process.execPath, args }); // limpa o registro antigo
+  if (process.platform !== 'win32') return app.setLoginItemSettings({ openAtLogin: !!on, path: process.execPath, args });
+  const link = settings.startupShortcutPath(app.getPath('appData'));
+  try {
+    if (on) {
+      shell.writeShortcutLink(link, 'replace', {
+        target: process.execPath,
+        args: args.map((a) => `"${a}"`).join(' '),
+        cwd: app.isPackaged ? path.dirname(process.execPath) : app.getAppPath(),
+        description: 'Workstack',
+      });
+    } else {
+      fs.rmSync(link, { force: true });
+    }
+  } catch { /* sem permissão ou pasta indisponível: o 🚀 continua refletindo a preferência */ }
+}
 const persist = (patch) => { cfg = { ...cfg, ...patch }; const s = settings.load(cfgFile); settings.save(cfgFile, { ...s, ...patch }); };
 
 const setWatch = (on) => {

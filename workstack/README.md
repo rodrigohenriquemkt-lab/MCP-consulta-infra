@@ -42,6 +42,12 @@ Com o app aberto, ele observa a janela em primeiro plano e, quando você fica 2 
 - WhatsApp Desktop só mostra "WhatsApp" no título, então vem pela coleta agendada (pergunta recebida e sem resposta sua).
 - Para ajustar os padrões aos seus títulos reais: `$env:WORKSTACK_DEBUG_TITLES="1"; npm start` imprime `processo | título -> nota` no terminal.
 
+### Abrir sem prompt: início com o Windows e tecla de atalho
+- **Início automático (ligado por padrão):** o app cria o atalho `Workstack.lnk` na pasta de Inicialização do Windows (`Win+R` → `shell:startup`). O botão 🚀 liga/desliga (remove ou recria o atalho). Abra o app uma vez para o atalho ser criado.
+- **Tecla de atalho para abrir:** `npm run instalar-windows` cria um atalho no Menu Iniciar com a tecla **Ctrl+Alt+W** (troque com `npm run instalar-windows -- -Hotkey "CTRL+ALT+K"`; remova com `-- -Remove`). Se o app já estiver aberto, a tecla só traz a janela para a frente.
+- **Mostrar/ocultar com o app aberto:** `Ctrl+Shift+Espaço`.
+- Requisito: a pasta do projeto deve ficar onde está (os atalhos apontam para ela) e o `npm install` já deve ter sido feito.
+
 ### Início automático e configurações
 Botão 🚀 no topo liga/desliga a abertura junto com o Windows (esmaecido = desligado). As opções ficam salvas em `%APPDATA%\workstack\settings.json`, então não dependem de variáveis de ambiente da sessão:
 ```powershell

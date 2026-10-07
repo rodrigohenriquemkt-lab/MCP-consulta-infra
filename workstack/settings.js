@@ -5,7 +5,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const DEFAULTS = { inbox: null, ignore: [], watch: true, autostart: false, me: null, relayUrl: null, relayToken: null };
+const DEFAULTS = { inbox: null, ignore: [], watch: true, autostart: true, me: null, relayUrl: null, relayToken: null };
 
 // Mesmo local que app.getPath('userData') do Electron para o app "workstack".
 function settingsPath(platform = process.platform, env = process.env) {
@@ -48,4 +48,7 @@ function relayEndpoint(url) {
   } catch { return null; }
 }
 
-module.exports = { relayEndpoint, DEFAULTS, settingsPath, load, save, resolve, list };
+// Pasta de Inicialização do Windows (shell:startup), a partir de %APPDATA%.
+const startupShortcutPath = (appData) => path.win32.join(appData, 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup', 'Workstack.lnk');
+
+module.exports = { startupShortcutPath, relayEndpoint, DEFAULTS, settingsPath, load, save, resolve, list };

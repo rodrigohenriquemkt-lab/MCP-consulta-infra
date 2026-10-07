@@ -29,3 +29,9 @@ test('ponte: só HTTPS (ou localhost) e monta o endereço /inbox', () => {
   assert.strictEqual(st.relayEndpoint('http://x.up.railway.app'), null); // token em texto puro: recusado
   assert.strictEqual(st.relayEndpoint('lixo'), null);
 });
+
+test('início automático: ligado por padrão e atalho na pasta de Inicialização', () => {
+  assert.strictEqual(st.DEFAULTS.autostart, true);
+  assert.strictEqual(st.startupShortcutPath('C:\\Users\\R\\AppData\\Roaming').replace(/\\/g, '/'),
+    'C:/Users/R/AppData/Roaming/Microsoft/Windows/Start Menu/Programs/Startup/Workstack.lnk');
+});
