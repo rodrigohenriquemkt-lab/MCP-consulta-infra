@@ -71,8 +71,9 @@ app.post("/briefings", ingestGuard, (req, res) => {
 app.post("/ingest/:id", ingestGuard, (req, res) => {
   const s = sessions.get(req.params.id);
   if (!s) return res.sendStatus(404);
-  const { speaker, text } = req.body || {};
-  s.session.addUtterance(speaker, text);
+  const { speaker, text, status } = req.body || {};
+  if (status) s.session.publish({ type: "status", text: status });
+  else s.session.addUtterance(speaker, text);
   res.sendStatus(202);
 });
 

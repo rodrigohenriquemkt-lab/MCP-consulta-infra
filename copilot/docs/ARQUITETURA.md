@@ -29,7 +29,7 @@ Console privado /console/:id ◄──── SSE ──────────�
 | Captura | App local, áudio do mic + loopback do sistema | Independe do app de reunião; sem bot visível |
 | Texto da reunião | **Legendas ao vivo do próprio app** (`companion/captions.py`) | Sem áudio, sem motor de STT, sem custo; exige legendas LIGADAS na reunião |
 | Quem fala | O nome do falante vem da legenda; `USER_NAMES` identifica o Rodrigo | Sem diarização própria |
-| Leitor de legendas | Calibrado com `companion/probe.py` numa reunião real | Não adivinhamos elementos de interface; a lógica de estabilização já é testada |
+| Leitor de legendas | Calibrado com `companion/probe.py` numa reunião real (Teams feito) | Não adivinhamos elementos de interface; se a Microsoft mudar a tela, rodar o probe de novo |
 | Início | Companheiro detecta a reunião → sessão e console abrem na hora | Diálogo começa com a reunião; o contexto não bloqueia |
 | Diálogo | Sugestões espontâneas + caixa de pergunta no console | Mão dupla |
 | Contexto | (1) briefing da sua rotina via `POST /briefings`; (2) fontes MCP próprias (`CONTEXT_SOURCES_FILE`): WhatsApp (Railway), CRM; tudo resumido pelo Claude | Reaproveita o que já funciona; filtra ruído pessoal |
@@ -54,7 +54,9 @@ Console privado /console/:id ◄──── SSE ──────────�
 | Briefing com fontes MCP + resumo | Escrito; **não testado** com fontes reais |
 | Companheiro (detecção, janela privada) | Escrito; **não testado** (sem Windows no ambiente de desenvolvimento) |
 | Estabilização das legendas (`CaptionStream`) | Pronto e testado (4 testes) |
-| Leitor de legendas por app (Teams/Zoom/Meet) | **Não existe**: depende de calibração com `probe.py` |
+| Leitor de legendas do **Teams** (`teams_reader.py`) | Escrito com a árvore real (probe de 07/10/2026) e validado contra ela; **falta rodar ao vivo** |
+| Leitor de Zoom e Meet | Não existe (5% das reuniões cada); exige calibração própria |
+| Detecção de reunião no Teams | Botão "Sair" (`hangup-button`) presente na janela; não depende do nome da reunião |
 | Briefing empurrado (`/briefings`) | Pronto; testado |
 | Claude real (prompts, qualidade das sugestões) | **Não testado** (sem chave no ambiente) |
 
@@ -66,7 +68,7 @@ Calibração: `python companion/probe.py "Microsoft Teams"` numa reunião com le
 Defina `INGEST_TOKEN` e `CONSOLE_TOKEN` antes de expor o servidor fora da sua máquina.
 
 ## Roadmap
-1. Calibrar: rodar `probe.py` em reuniões internas (Teams, Zoom, Meet) e escrever os leitores com os elementos reais.
+1. Rodar o companheiro ao vivo numa reunião interna do Teams e ajustar (desempenho da leitura, detecção). Zoom/Meet: calibrar depois, se valer a pena.
 2. Teste ponta a ponta local; depois ligar WhatsApp e CRM no `context-sources.json` e a rotina de briefing em `/briefings`.
 3. Pós-reunião: ata, próximos passos, nota no CRM (com sua confirmação).
 4. Avaliar com reuniões gravadas: sugestões úteis x ruído; ajustar gatilhos e prompts.

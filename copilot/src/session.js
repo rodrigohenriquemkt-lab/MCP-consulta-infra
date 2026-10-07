@@ -25,7 +25,8 @@ export class MeetingSession {
     this.newWords += wordCount(text);
     this.publish({ type: "transcript", speaker, text });
 
-    const fromClient = !config.userNames.includes((speaker || "").toLowerCase());
+    const sp = (speaker || "").toLowerCase();
+    const fromClient = !config.userNames.some((n) => n && sp.includes(n)); // "Rodrigo Henrique" casa com "rodrigo"
     // Pergunta do cliente dispara análise sem esperar o limiar de palavras.
     const urgent = fromClient && isQuestion(text);
     if (this.newWords >= config.minNewWords || urgent) this.schedule(urgent ? 800 : config.debounceMs);

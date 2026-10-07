@@ -37,5 +37,12 @@ class T(unittest.TestCase):
         self.assertIn("firewall", textos)
         self.assertEqual(textos.count("empresa"), 1)
 
+    def test_historico_inicial_nao_e_reenviado(self):
+        cs = CaptionStream(lambda s, t: self.out.append((s, t)), skip_initial=True)
+        cs.feed([("Ana", "fala antiga")], now=0)
+        cs.feed([("Ana", "fala antiga"), ("Rodrigo", "fala nova")], now=1)
+        cs.feed([("Ana", "fala antiga"), ("Rodrigo", "fala nova")], now=4)
+        self.assertEqual(self.out, [("Rodrigo", "fala nova")])
+
 if __name__ == "__main__":
     unittest.main()
