@@ -27,7 +27,7 @@ POST /webhooks/recall ──► MeetingSession ──► gatilho (palavras/pergu
 | Transcrição em tempo real (Teams/Zoom/Meet) | Recall.ai (`src/recall.js`) | Escrito, **não testado** contra a API real |
 | Início automático | Integração de calendário do Recall (auto-join) ou `POST /meetings` disparado por rotina que lê a agenda do Outlook | Fase 2 |
 | Contexto CRM / e-mail / Teams | `src/context.js`: CRM e infra prontos; e-mail/Teams entram via `extra` (fase 2: busca no M365 por domínio do cliente) | CRM + infra: pronto |
-| Ofertas aderentes | Catálogo `data/portfolio.json`; modelo escolhe por `id` | **Catálogo é exemplo — preencher** |
+| Ofertas aderentes | Catálogo `data/portfolio.json` (nível fabricante); modelo escolhe por `id` | **Catálogo v1: 11 fabricantes informados por Rodrigo; revisar temas e trocar links por páginas de produto** |
 | Links para compartilhar | Só do catálogo; ids/URLs inventados são descartados (testado) | Pronto |
 | Fala consultiva | `fala_sugerida` (1ª pessoa, risco/NIST/valor) no schema | Pronto |
 | Perguntas ao cliente | `tipo: "pergunta"` + `perguntas_discovery` do catálogo | Pronto |

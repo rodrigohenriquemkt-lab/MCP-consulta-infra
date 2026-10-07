@@ -108,14 +108,14 @@ function mockAnalyze(transcript) {
     return { relevante: false, topico: "fora de escopo", sugestoes: [] };
   return enrich({
     relevante: true,
-    topico: "ransomware / endpoint",
+    topico: "ransomware / rede",
     sugestoes: [
       {
         tipo: "oferta",
-        titulo: "EDR/XDR com resposta",
-        fala_sugerida: "Pelo que vocês descreveram, vale olhar a cobertura de endpoint e quem responde fora do horário comercial.",
+        titulo: "Firewall e proteção contra ransomware",
+        fala_sugerida: "Pelo que vocês descreveram, vale revisar a segmentação e a prevenção na borda e na nuvem.",
         porque: "Cliente citou incidente de ransomware.",
-        produtos: ["exemplo-edr", "id-inexistente"],
+        produtos: ["palo-alto", "id-inexistente"],
         urgencia: "agora",
       },
     ],

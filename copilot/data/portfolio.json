@@ -1,35 +1,347 @@
 {
-  "_aviso": "CATÁLOGO DE EXEMPLO. Preencha com o portfólio real da Gantech. O agente só cita links presentes aqui: nunca inventa URL.",
+  "_aviso": "Portfólio e descrições fornecidos por Rodrigo (Gantech). Temas e 'quando_indicar' são classificação do assistente: revisar. Links = site raiz do fabricante (não verificado) + página de parceiros; trocar por páginas de produto/cases.",
   "produtos": [
     {
-      "id": "exemplo-edr",
-      "nome": "EDR/XDR (exemplo)",
-      "fabricante": "A definir",
-      "categoria": "Endpoint",
-      "temas": ["ransomware", "endpoint", "edr", "xdr", "malware", "resposta a incidentes"],
-      "quando_indicar": "Cliente relata ataques em endpoints, ransomware recente ou falta de visibilidade em estações/servidores.",
-      "perguntas_discovery": ["Qual a cobertura atual de EDR e quem monitora os alertas 24x7?"],
-      "links": [{ "titulo": "Página do produto (preencher)", "url": "https://exemplo.invalid/edr" }]
+      "id": "akamai",
+      "nome": "Akamai",
+      "fabricante": "Akamai",
+      "categoria": "Edge/Aplicações",
+      "descricao": "Proteção, escalabilidade e desempenho para negócios online e aplicações digitais.",
+      "temas": [
+        "cdn",
+        "waf",
+        "ddos",
+        "api",
+        "bots",
+        "e-commerce",
+        "desempenho",
+        "aplicações web"
+      ],
+      "quando_indicar": "Aplicações, sites e APIs expostos na internet; ataques DDoS/bots; picos de acesso e desempenho.",
+      "perguntas_discovery": [
+        "Quais aplicações e APIs ficam expostas e como são protegidas contra DDoS, bots e abuso em picos de acesso?"
+      ],
+      "links": [
+        {
+          "titulo": "Akamai: site oficial",
+          "url": "https://www.akamai.com"
+        },
+        {
+          "titulo": "Parceiros Gantech",
+          "url": "https://gantech.com.br/parceiros"
+        }
+      ]
     },
     {
-      "id": "exemplo-cloud-sec",
-      "nome": "Segurança em nuvem / CSPM (exemplo)",
-      "fabricante": "A definir",
-      "categoria": "Cloud",
-      "temas": ["cloud", "aws", "azure", "gcp", "cspm", "configuração", "nuvem", "lgpd"],
-      "quando_indicar": "Migração ou workloads em nuvem pública sem postura de segurança monitorada.",
-      "perguntas_discovery": ["Como é feito hoje o inventário e a revisão de configurações na nuvem?"],
-      "links": []
+      "id": "beyondtrust",
+      "nome": "BeyondTrust",
+      "fabricante": "BeyondTrust",
+      "categoria": "Identidade/Acesso privilegiado",
+      "descricao": "Soluções de identidade inteligente, gestão de acessos e proteção de identidades para ambientes de trabalho remoto (anywhere office).",
+      "temas": [
+        "pam",
+        "acesso privilegiado",
+        "identidade",
+        "trabalho remoto",
+        "acesso remoto",
+        "terceiros",
+        "admin local",
+        "auditoria"
+      ],
+      "quando_indicar": "Contas privilegiadas, acesso remoto de colaboradores e terceiros, remoção de admin local, requisitos de auditoria.",
+      "perguntas_discovery": [
+        "Como são controlados e auditados os acessos privilegiados e remotos, inclusive de terceiros?"
+      ],
+      "links": [
+        {
+          "titulo": "BeyondTrust: site oficial",
+          "url": "https://www.beyondtrust.com"
+        },
+        {
+          "titulo": "Parceiros Gantech",
+          "url": "https://gantech.com.br/parceiros"
+        }
+      ]
     },
     {
-      "id": "exemplo-mdr-soc",
-      "nome": "SOC / MDR gerenciado (exemplo)",
-      "fabricante": "Gantech",
-      "categoria": "Serviços",
-      "temas": ["soc", "mdr", "siem", "monitoramento", "24x7", "nist", "governança"],
-      "quando_indicar": "Time interno reduzido, sem monitoramento contínuo, ou exigência de maturidade NIST.",
-      "perguntas_discovery": ["Qual o tamanho do time de segurança e a janela de monitoramento atual?"],
-      "links": []
+      "id": "firemon",
+      "nome": "FireMon",
+      "fabricante": "FireMon",
+      "categoria": "Políticas de rede",
+      "descricao": "Gerenciamento e automação de políticas de segurança de rede para redução da superfície de ataques.",
+      "temas": [
+        "firewall",
+        "regras",
+        "política de segurança",
+        "compliance",
+        "auditoria",
+        "superfície de ataque",
+        "automação",
+        "change management"
+      ],
+      "quando_indicar": "Muitos firewalls/regras acumuladas, mudanças manuais, auditoria de conformidade.",
+      "perguntas_discovery": [
+        "Com que frequência as regras de firewall são revisadas e como se detectam regras obsoletas ou excessivas?"
+      ],
+      "links": [
+        {
+          "titulo": "FireMon: site oficial",
+          "url": "https://www.firemon.com"
+        },
+        {
+          "titulo": "Parceiros Gantech",
+          "url": "https://gantech.com.br/parceiros"
+        }
+      ]
+    },
+    {
+      "id": "fortinet",
+      "nome": "Fortinet",
+      "fabricante": "Fortinet",
+      "categoria": "Plataforma (rede/endpoint)",
+      "descricao": "Soluções abrangentes de cibersegurança, incluindo firewalls, antivírus, prevenção de intrusão (IPS) e segurança de endpoints.",
+      "temas": [
+        "firewall",
+        "ngfw",
+        "ips",
+        "antivírus",
+        "endpoint",
+        "segmentação",
+        "filiais",
+        "consolidação de fornecedores"
+      ],
+      "quando_indicar": "Renovação ou consolidação de firewall, IPS e proteção de endpoint em uma única plataforma.",
+      "perguntas_discovery": [
+        "Qual o parque atual de firewalls e proteção de endpoint, e quantos fornecedores diferentes isso envolve?"
+      ],
+      "links": [
+        {
+          "titulo": "Fortinet: site oficial",
+          "url": "https://www.fortinet.com"
+        },
+        {
+          "titulo": "Parceiros Gantech",
+          "url": "https://gantech.com.br/parceiros"
+        }
+      ]
+    },
+    {
+      "id": "palo-alto",
+      "nome": "Palo Alto Networks",
+      "fabricante": "Palo Alto Networks",
+      "categoria": "Plataforma (rede/nuvem)",
+      "descricao": "Plataforma de cibersegurança focada em firewalls de próxima geração e extensão de proteção para ambientes em nuvem.",
+      "temas": [
+        "ngfw",
+        "firewall",
+        "nuvem",
+        "cloud",
+        "prisma",
+        "plataforma",
+        "segmentação",
+        "consolidação"
+      ],
+      "quando_indicar": "Firewall de nova geração e extensão da mesma política e proteção para ambientes em nuvem.",
+      "perguntas_discovery": [
+        "A política de segurança de rede é a mesma no datacenter e na nuvem, ou são ambientes tratados separadamente?"
+      ],
+      "links": [
+        {
+          "titulo": "Palo Alto Networks: site oficial",
+          "url": "https://www.paloaltonetworks.com"
+        },
+        {
+          "titulo": "Parceiros Gantech",
+          "url": "https://gantech.com.br/parceiros"
+        }
+      ]
+    },
+    {
+      "id": "tenable",
+      "nome": "Tenable",
+      "fabricante": "Tenable",
+      "categoria": "Vulnerabilidades",
+      "descricao": "Plataforma de gestão, avaliação e visibilidade de vulnerabilidades de TI.",
+      "temas": [
+        "vulnerabilidades",
+        "gestão de vulnerabilidades",
+        "patch",
+        "exposição",
+        "cve",
+        "priorização",
+        "visibilidade",
+        "varredura"
+      ],
+      "quando_indicar": "Gestão de vulnerabilidades imatura, dificuldade de priorizar correções, falta de visibilidade do parque.",
+      "perguntas_discovery": [
+        "Como as vulnerabilidades são identificadas e priorizadas, e qual o tempo médio de correção das críticas?"
+      ],
+      "links": [
+        {
+          "titulo": "Tenable: site oficial",
+          "url": "https://www.tenable.com"
+        },
+        {
+          "titulo": "Parceiros Gantech",
+          "url": "https://gantech.com.br/parceiros"
+        }
+      ]
+    },
+    {
+      "id": "trend-ai",
+      "nome": "Trend AI",
+      "fabricante": "Trend AI",
+      "categoria": "Nuvem/Servidores/Endpoint",
+      "descricao": "Cibersegurança corporativa com foco em ambientes de nuvem, servidores, contêineres, redes e endpoints.",
+      "temas": [
+        "nuvem",
+        "servidores",
+        "contêineres",
+        "endpoint",
+        "rede",
+        "workloads",
+        "edr",
+        "ransomware"
+      ],
+      "quando_indicar": "Proteção de servidores, workloads e contêineres em nuvem e endpoints sob uma mesma plataforma.",
+      "perguntas_discovery": [
+        "Como estão protegidos hoje os servidores e workloads (on-premises e nuvem) e quem monitora os alertas?"
+      ],
+      "links": [
+        {
+          "titulo": "Trend AI: site oficial",
+          "url": "https://www.trendmicro.com"
+        },
+        {
+          "titulo": "Parceiros Gantech",
+          "url": "https://gantech.com.br/parceiros"
+        }
+      ]
+    },
+    {
+      "id": "upwind",
+      "nome": "Upwind",
+      "fabricante": "Upwind",
+      "categoria": "Segurança de nuvem/IA",
+      "descricao": "Segurança para infraestrutura de nuvem e inteligência artificial via varreduras sem agente e sensores em tempo de execução.",
+      "temas": [
+        "cloud",
+        "nuvem",
+        "runtime",
+        "sem agente",
+        "ia",
+        "workloads de ia",
+        "cnapp",
+        "kubernetes"
+      ],
+      "quando_indicar": "Workloads em nuvem e cargas de IA que precisam de visibilidade e proteção em tempo de execução.",
+      "perguntas_discovery": [
+        "Quais cargas em nuvem e de IA já estão em produção e como é monitorado o comportamento delas em execução?"
+      ],
+      "links": [
+        {
+          "titulo": "Upwind: site oficial",
+          "url": "https://www.upwind.io"
+        },
+        {
+          "titulo": "Parceiros Gantech",
+          "url": "https://gantech.com.br/parceiros"
+        }
+      ]
+    },
+    {
+      "id": "varonis",
+      "nome": "Varonis",
+      "fabricante": "Varonis",
+      "categoria": "Dados",
+      "descricao": "Rastreamento, análise, governança e proteção de dados não estruturados.",
+      "temas": [
+        "dados",
+        "dados não estruturados",
+        "lgpd",
+        "permissões",
+        "file server",
+        "m365",
+        "vazamento",
+        "governança de dados"
+      ],
+      "quando_indicar": "Dados sensíveis em file servers/SharePoint/nuvem, excesso de permissões, LGPD, risco de vazamento.",
+      "perguntas_discovery": [
+        "Vocês sabem quais dados sensíveis existem, quem tem acesso a eles e quem os acessou recentemente?"
+      ],
+      "links": [
+        {
+          "titulo": "Varonis: site oficial",
+          "url": "https://www.varonis.com"
+        },
+        {
+          "titulo": "Parceiros Gantech",
+          "url": "https://gantech.com.br/parceiros"
+        }
+      ]
+    },
+    {
+      "id": "watchguard",
+      "nome": "WatchGuard",
+      "fabricante": "WatchGuard",
+      "categoria": "Rede",
+      "descricao": "Soluções de segurança de rede voltadas à prevenção contra malwares e ransomwares.",
+      "temas": [
+        "firewall",
+        "utm",
+        "malware",
+        "ransomware",
+        "rede",
+        "pequenas e médias empresas",
+        "filiais"
+      ],
+      "quando_indicar": "Proteção de rede contra malware e ransomware, especialmente em filiais e empresas de menor porte.",
+      "perguntas_discovery": [
+        "Como a rede das unidades menores está protegida contra malware e ransomware, e quem gerencia isso?"
+      ],
+      "links": [
+        {
+          "titulo": "WatchGuard: site oficial",
+          "url": "https://www.watchguard.com"
+        },
+        {
+          "titulo": "Parceiros Gantech",
+          "url": "https://gantech.com.br/parceiros"
+        }
+      ]
+    },
+    {
+      "id": "wiz",
+      "nome": "Wiz",
+      "fabricante": "Wiz",
+      "categoria": "Segurança de nuvem",
+      "descricao": "Plataforma de segurança nativa em nuvem para visibilidade, normalização e eliminação de riscos em ambientes multicloud.",
+      "temas": [
+        "cloud",
+        "nuvem",
+        "multicloud",
+        "cspm",
+        "postura",
+        "visibilidade",
+        "aws",
+        "azure",
+        "gcp",
+        "riscos"
+      ],
+      "quando_indicar": "Ambientes em uma ou mais nuvens públicas sem visão unificada de riscos e configuração.",
+      "perguntas_discovery": [
+        "Quantas nuvens públicas vocês usam e existe uma visão única de riscos e configurações entre elas?"
+      ],
+      "links": [
+        {
+          "titulo": "Wiz: site oficial",
+          "url": "https://www.wiz.io"
+        },
+        {
+          "titulo": "Parceiros Gantech",
+          "url": "https://gantech.com.br/parceiros"
+        }
+      ]
     }
   ]
 }

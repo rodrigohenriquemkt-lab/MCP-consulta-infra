@@ -23,5 +23,5 @@ test("sugere oferta e descarta produto inexistente (sem link inventado)", async 
   await wait(100);
   const sug = events.find((e) => e.type === "suggestions");
   assert.ok(sug);
-  assert.deepEqual(sug.sugestoes[0].produtos.map((p) => p.id), ["exemplo-edr"]);
+  assert.deepEqual(sug.sugestoes[0].produtos.map((p) => p.id), ["palo-alto"]);
 });
