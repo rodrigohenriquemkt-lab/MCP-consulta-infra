@@ -13,12 +13,12 @@ PC do Rodrigo (Windows)                          Servidor do agente (Node)
 │ companion/companion.py        │ ───────────────► │ sessão + console criados IMEDIATAMENTE    │
 │  • detecta Teams/Zoom/Meet    │                  │ briefing carrega em segundo plano e       │
 │  • abre a janela privada      │                  │ chega ao console como evento              │
-│  • mic → "Rodrigo"            │  POST /ingest/id │ session.js: gatilhos (palavras/pergunta/  │
-│  • áudio do sistema→"Cliente" │ ───────────────► │   debounce/cooldown)                      │
-│  • STT (motor a definir)      │   (só texto)     │ brain.js: Claude + catálogo + ferramentas │
+│  • lê as legendas do app      │  POST /ingest/id │ session.js: gatilhos (palavras/pergunta/  │
+│  • estabiliza as linhas       │ ───────────────► │   debounce/cooldown)                      │
+│    (captions.py)              │   (só texto)     │ brain.js: Claude + catálogo + ferramentas │
 └───────────────────────────────┘                  │  (analisar_infra_cliente, buscar_crm)     │
-Texto também pode chegar por outra via             │ links só do catálogo                      │
-(transcrição ao vivo do app) em /ingest/:id        └──────────────────────────────────────────┘
+Briefing da sua rotina → POST /briefings      │ links só do catálogo                      │
+(casa por cliente/domínio com o título)         └──────────────────────────────────────────┘
 Console privado /console/:id ◄──── SSE ─────────── sugestões, status, briefing, respostas
  (2º monitor/celular) ──── POST /sessions/:id/ask ► pergunta direta ao consultor
 ```
