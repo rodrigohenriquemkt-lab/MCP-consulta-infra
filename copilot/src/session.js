@@ -31,6 +31,10 @@ export class MeetingSession {
     if (this.newWords >= config.minNewWords || urgent) this.schedule(urgent ? 800 : config.debounceMs);
   }
 
+  recentTranscript(n = 40) {
+    return this.utterances.slice(-n).map((u) => `${u.speaker}: ${u.text}`).join("\n");
+  }
+
   schedule(delay) {
     clearTimeout(this.timer);
     this.timer = setTimeout(() => this.run(), delay); // debounce: espera a fala assentar
@@ -44,8 +48,7 @@ export class MeetingSession {
     this.newWords = 0;
     this.lastRun = now;
     try {
-      const recent = this.utterances.slice(-40).map((u) => `${u.speaker}: ${u.text}`).join("\n");
-      const out = await analyze({ briefing: this.briefing, transcript: recent, jaSugerido: this.jaSugerido });
+      const out = await analyze({ briefing: this.briefing, transcript: this.recentTranscript(), jaSugerido: this.jaSugerido });
       if (out.relevante && out.sugestoes.length) {
         for (const s of out.sugestoes) this.jaSugerido.push(`${s.tipo}: ${s.titulo}`);
         this.jaSugerido = this.jaSugerido.slice(-20);

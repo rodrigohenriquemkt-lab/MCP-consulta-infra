@@ -5,7 +5,7 @@ import { callMcpTool } from "./mcp.js";
 export const clip = (s, n) => (s.length > n ? s.slice(0, n) + "…[truncado]" : s);
 
 // Fontes de contexto configuráveis (arquivo JSON em CONTEXT_SOURCES_FILE). Cada fonte é um
-// servidor MCP (WhatsApp, e-mail/Teams/agenda do Microsoft 365, CRM...) com as chamadas
+// servidor MCP (WhatsApp, e-mail e Teams do Microsoft 365, CRM...) com as chamadas
 // de leitura a fazer. Placeholders: {cliente}, {dominio}, {titulo}.
 // Exemplo em docs/context-sources.exemplo.json. Somente leitura.
 export function loadSources() {

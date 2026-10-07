@@ -1,7 +1,7 @@
-faster-whisper>=1.0
 numpy
 requests
 psutil
 sounddevice
 PyAudioWPatch; sys_platform == "win32"
 pygetwindow; sys_platform == "win32"
+# Motor de transcrição: a definir (ver companion/stt.py). Whisper NÃO é usado.

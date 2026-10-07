@@ -121,3 +121,20 @@ function mockAnalyze(transcript) {
     ],
   });
 }
+
+// Diálogo direto do Rodrigo com o consultor durante a reunião (pergunta livre, resposta curta).
+export async function ask({ briefing, transcript, pergunta }) {
+  if (config.mock) return `(mock) Pergunta recebida: ${pergunta}`;
+  const res = await client.messages.create({
+    model: config.model,
+    max_tokens: 1200,
+    system: [
+      { type: "text", text: SYSTEM.split("SAÍDA:")[0] + "Agora o Rodrigo está perguntando algo diretamente a você. Responda em texto simples, curto e acionável (até ~120 palavras), com uma fala sugerida quando fizer sentido." },
+      { type: "text", text: `CATÁLOGO:\n${JSON.stringify(catalogForPrompt())}\n\nBRIEFING DO CLIENTE:\n${briefing}`, cache_control: { type: "ephemeral" } },
+    ],
+    tools: liveTools,
+    messages: [{ role: "user", content: `TRANSCRIÇÃO RECENTE:\n${transcript || "(ainda sem falas)"}\n\nPERGUNTA DO RODRIGO: ${pergunta}` }],
+    output_config: { effort: config.effort },
+  });
+  return res.content.find((b) => b.type === "text")?.text ?? "";
+}

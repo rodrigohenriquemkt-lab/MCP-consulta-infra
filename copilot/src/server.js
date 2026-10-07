@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { config } from "./config.js";
 import { MeetingSession } from "./session.js";
 import { buildBriefing } from "./briefing.js";
+import { ask } from "./brain.js";
 import { consoleHtml } from "./console.js";
 
 const app = express();
@@ -15,14 +16,26 @@ function guard(req, res, next) {
   res.status(401).send("não autorizado");
 }
 
-async function createSession({ titulo, participantes, clienteNome, dominio, extra }) {
+// A sessão (e o console) nascem NA HORA; o briefing carrega em segundo plano e chega por evento.
+function createSession({ titulo, participantes, clienteNome, dominio, extra }) {
   const id = randomUUID();
   const clients = new Set();
-  const publish = (ev) => clients.forEach((c) => c.write(`data: ${JSON.stringify(ev)}\n\n`));
-  const briefing = await buildBriefing({ titulo, participantes, clienteNome, dominio, extra });
-  const session = new MeetingSession({ id, briefing, publish });
-  sessions.set(id, { session, clients });
-  return { sessionId: id, briefingChars: briefing.length };
+  const history = []; // reenviado a quem abre o console depois
+  const publish = (ev) => {
+    history.push(ev);
+    if (history.length > 300) history.shift();
+    clients.forEach((c) => c.write(`data: ${JSON.stringify(ev)}\n\n`));
+  };
+  const session = new MeetingSession({ id, briefing: "Contexto ainda carregando; use apenas a conversa até chegar.", publish });
+  sessions.set(id, { session, clients, history });
+  publish({ type: "status", text: `Reunião iniciada${titulo ? `: ${titulo}` : ""}. Estou ouvindo. Carregando o contexto do cliente...` });
+  buildBriefing({ titulo, participantes, clienteNome, dominio, extra })
+    .then((b) => {
+      session.briefing = b;
+      publish({ type: "briefing", text: b });
+    })
+    .catch((e) => publish({ type: "error", message: `Contexto indisponível: ${e.message}` }));
+  return { sessionId: id };
 }
 
 function ingestGuard(req, res, next) {
@@ -32,10 +45,10 @@ function ingestGuard(req, res, next) {
 
 // Início de reunião (chamado pelo app companheiro ao detectar a reunião, ou manualmente).
 // `titulo`/`participantes` ajudam a identificar o cliente; o resto vem das fontes de contexto.
-app.post("/meetings", ingestGuard, async (req, res) => {
+app.post("/meetings", ingestGuard, (req, res) => {
   try {
-    const { sessionId, briefingChars } = await createSession(req.body || {});
-    res.json({ sessionId, console: `/console/${sessionId}`, briefingChars });
+    const { sessionId } = createSession(req.body || {});
+    res.json({ sessionId, console: `/console/${sessionId}` });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -63,8 +76,25 @@ app.get("/sessions/:id/stream", guard, (req, res) => {
   if (!s) return res.sendStatus(404);
   res.set({ "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive" });
   res.flushHeaders();
+  s.history.forEach((ev) => res.write(`data: ${JSON.stringify(ev)}\n\n`));
   s.clients.add(res);
   req.on("close", () => s.clients.delete(res));
+});
+
+// Pergunta direta do Rodrigo ao consultor (caixa de texto do console).
+app.post("/sessions/:id/ask", guard, async (req, res) => {
+  const s = sessions.get(req.params.id);
+  const pergunta = String(req.body?.pergunta || "").trim();
+  if (!s || !pergunta) return res.sendStatus(400);
+  s.session.publish({ type: "question", text: pergunta });
+  try {
+    const text = await ask({ briefing: s.session.briefing, transcript: s.session.recentTranscript(), pergunta });
+    s.session.publish({ type: "answer", text });
+    res.json({ ok: true });
+  } catch (e) {
+    s.session.publish({ type: "error", message: e.message });
+    res.status(500).json({ error: e.message });
+  }
 });
 
 app.get("/console/:id", guard, (req, res) => res.type("html").send(consoleHtml(req.params.id, req.query.token || "")));

@@ -21,7 +21,7 @@ export const config = {
   crmMcpToken: env.CRM_MCP_TOKEN || "",
   // Token que o app companheiro (no seu PC) usa para enviar transcrição.
   ingestToken: env.INGEST_TOKEN || "",
-  // Fontes extras de contexto (WhatsApp, e-mail, Teams, agenda...): arquivo JSON, ver docs.
+  // Fontes extras de contexto (WhatsApp, e-mail, Teams, CRM...): arquivo JSON, ver docs.
   contextSourcesFile: env.CONTEXT_SOURCES_FILE || "",
   domainsInternal: (env.INTERNAL_DOMAINS || "gantech.com.br").split(",").map((s) => s.trim().toLowerCase()),
   mock: env.BRAIN_MOCK === "1",
