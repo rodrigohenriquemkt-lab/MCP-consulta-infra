@@ -1,0 +1,17 @@
+{
+  "name": "gantech-meeting-copilot",
+  "version": "0.1.0",
+  "description": "Copiloto de reuniões (Teams/Zoom/Meet) para vendas consultivas de cibersegurança da Gantech.",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node src/server.js",
+    "sim": "node sim/replay.js sim/reuniao-exemplo.jsonl",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "latest",
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "express": "^4.21.2"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "_aviso": "CATÁLOGO DE EXEMPLO. Preencha com o portfólio real da Gantech. O agente só cita links presentes aqui: nunca inventa URL.",
+  "produtos": [
+    {
+      "id": "exemplo-edr",
+      "nome": "EDR/XDR (exemplo)",
+      "fabricante": "A definir",
+      "categoria": "Endpoint",
+      "temas": ["ransomware", "endpoint", "edr", "xdr", "malware", "resposta a incidentes"],
+      "quando_indicar": "Cliente relata ataques em endpoints, ransomware recente ou falta de visibilidade em estações/servidores.",
+      "perguntas_discovery": ["Qual a cobertura atual de EDR e quem monitora os alertas 24x7?"],
+      "links": [{ "titulo": "Página do produto (preencher)", "url": "https://exemplo.invalid/edr" }]
+    },
+    {
+      "id": "exemplo-cloud-sec",
+      "nome": "Segurança em nuvem / CSPM (exemplo)",
+      "fabricante": "A definir",
+      "categoria": "Cloud",
+      "temas": ["cloud", "aws", "azure", "gcp", "cspm", "configuração", "nuvem", "lgpd"],
+      "quando_indicar": "Migração ou workloads em nuvem pública sem postura de segurança monitorada.",
+      "perguntas_discovery": ["Como é feito hoje o inventário e a revisão de configurações na nuvem?"],
+      "links": []
+    },
+    {
+      "id": "exemplo-mdr-soc",
+      "nome": "SOC / MDR gerenciado (exemplo)",
+      "fabricante": "Gantech",
+      "categoria": "Serviços",
+      "temas": ["soc", "mdr", "siem", "monitoramento", "24x7", "nist", "governança"],
+      "quando_indicar": "Time interno reduzido, sem monitoramento contínuo, ou exigência de maturidade NIST.",
+      "perguntas_discovery": ["Qual o tamanho do time de segurança e a janela de monitoramento atual?"],
+      "links": []
+    }
+  ]
+}
