@@ -48,20 +48,34 @@ def send(session, body):
         print("falha ao enviar:", e)
 
 def read_captions(snapshot, session, stop):
+    # A UI Automation (COM) precisa ser inicializada em cada thread; sem isso a leitura falha em silêncio.
+    try:
+        import uiautomation as auto
+        init = auto.UIAutomationInitializerInThread()
+    except Exception:
+        init = None
     stream = CaptionStream(lambda spk, txt: send_text(session, spk, txt), skip_initial=True)
-    t0, avisou, viu_painel = time.time(), False, False
+    t0, avisou, viu_painel, falhas, relatou = time.time(), False, False, 0, False
+    print("Leitura de legendas iniciada.")
     while not stop.is_set():
         try:
             snap = snapshot()
+            falhas = 0
             viu_painel = viu_painel or snap is not None
             if not viu_painel and not avisou and time.time() - t0 > 20:
                 avisou = True
                 send(session, {"status": "Não vejo as legendas ao vivo do Teams. Ative em Mais (...) > Idioma e fala > Ativar legendas ao vivo."})
             stream.feed(snap)
         except Exception as e:  # a interface do app pode mudar; não derruba o companheiro
-            print("leitura de legendas falhou:", e)
+            falhas += 1
+            print("leitura de legendas falhou:", repr(e))
+            if falhas >= 5 and not relatou:  # mostra o erro na janela privada para facilitar o diagnóstico
+                relatou = True
+                send(session, {"status": f"Falha ao ler as legendas: {e!r}"})
         time.sleep(POLL)
     stream.feed([])  # descarrega o que ficou pendente
+    if init is not None:
+        init.Uninitialize()
 
 def main():
     snapshot = load_reader(os.environ.get("CAPTIONS_READER", "teams"))
